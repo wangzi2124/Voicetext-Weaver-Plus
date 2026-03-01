@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>voicetext-weaver-plus</artifactId>
+        <groupId>org.dromara</groupId>
+        <version>${revision}</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <modules>
+        <module>voicetext-demo</module>
+        <module>voicetext-generator</module>
+        <module>voicetext-job</module>
+        <module>voicetext-system</module>
+        <module>voicetext-workflow</module>
+    </modules>
+
+    <artifactId>voicetext-modules</artifactId>
+    <packaging>pom</packaging>
+
+    <description>
+        voicetext-modules 业务模块
+    </description>
+
+</project>

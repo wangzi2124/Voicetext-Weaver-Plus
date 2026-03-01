@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>voicetext-weaver-plus</artifactId>
+        <groupId>org.dromara</groupId>
+        <version>${revision}</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <modules>
+        <module>voicetext-common-bom</module>
+        <module>voicetext-common-social</module>
+        <module>voicetext-common-core</module>
+        <module>voicetext-common-doc</module>
+        <module>voicetext-common-excel</module>
+        <module>voicetext-common-idempotent</module>
+        <module>voicetext-common-job</module>
+        <module>voicetext-common-log</module>
+        <module>voicetext-common-mail</module>
+        <module>voicetext-common-mybatis</module>
+        <module>voicetext-common-oss</module>
+        <module>voicetext-common-ratelimiter</module>
+        <module>voicetext-common-redis</module>
+        <module>voicetext-common-satoken</module>
+        <module>voicetext-common-security</module>
+        <module>voicetext-common-sms</module>
+        <module>voicetext-common-web</module>
+        <module>voicetext-common-translation</module>
+        <module>voicetext-common-sensitive</module>
+        <module>voicetext-common-json</module>
+        <module>voicetext-common-encrypt</module>
+        <module>voicetext-common-tenant</module>
+        <module>voicetext-common-websocket</module>
+        <module>voicetext-common-sse</module>
+    </modules>
+
+    <artifactId>voicetext-common</artifactId>
+    <packaging>pom</packaging>
+
+    <description>
+        common 通用模块
+    </description>
+
+</project>
