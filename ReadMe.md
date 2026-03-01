@@ -37,14 +37,14 @@
 ## 1.2 模块架构设计
 
 ```
-ruoyi-vue-plus/
-├── ruoyi-admin/                    # 系统启动模块
-├── ruoyi-common/                   # 通用工具模块
-│   ├── ruoyi-common-core/          # 核心工具
-│   ├── ruoyi-common-redis/         # Redis缓存
-│   ├── ruoyi-common-oss/           # 对象存储
-│   ├── ruoyi-common-satoken/       # 权限认证
-│   └── ruoyi-common-audio/         # 【新增】音频处理核心
+voicetext-veaver-plus/
+├── voicetext-admin/                    # 系统启动模块
+├── voicetext-common/                   # 通用工具模块
+│   ├── voicetext-common-core/          # 核心工具
+│   ├── voicetext-common-redis/         # Redis缓存
+│   ├── voicetext-common-oss/           # 对象存储
+│   ├── voicetext-common-satoken/       # 权限认证
+│   └── voicetext-common-audio/         # 【新增】音频处理核心
 │       ├── src/main/java/org/dromara/audio/
 │       │   ├── core/                # 音频核心处理
 │       │   │   ├── AudioProcessor.java        # 音频处理接口
@@ -61,10 +61,10 @@ ruoyi-vue-plus/
 │       │       ├── AudioAnalyzer.java         # 音频分析
 │       │       └── VoiceActivityDetector.java # 语音活动检测
 │       └── pom.xml                    # 新增模块依赖
-├── ruoyi-modules/                   # 业务模块
-│   ├── ruoyi-system/                # 系统管理(扩展租户资源)
-│   ├── ruoyi-workflow/              # 工作流(音频审核流程)
-│   ├── ruoyi-tenant-resource/       # 【新增】租户资源池管理
+├── voicetext-modules/                   # 业务模块
+│   ├── voicetext-system/                # 系统管理(扩展租户资源)
+│   ├── voicetext-workflow/              # 工作流(音频审核流程)
+│   ├── voicetext-tenant-resource/       # 【新增】租户资源池管理
 │   │   ├── src/main/java/org/dromara/tenantresource/
 │   │   │   ├── controller/           # 资源控制器
 │   │   │   │   ├── AudioResourceController.java  # 音频资源API
@@ -83,15 +83,15 @@ ruoyi-vue-plus/
 │   │   │   │   └── vo/                   # 视图对象
 │   │   │   └── config/                   # 配置类
 │   │   └── pom.xml
-│   ├── ruoyi-ai-assistant/          # 【新增】AI助手模块(整合Spring AI)
-│   └── ruoyi-knowledge-graph/       # 【新增】知识图谱(Neo4j)
-└── ruoyi-extend/                    # 扩展组件
-    └── ruoyi-xxl-job/               # 保留原定时任务
+│   ├── voicetext-ai-assistant/          # 【新增】AI助手模块(整合Spring AI)
+│   └── voicetext-knowledge-graph/       # 【新增】知识图谱(Neo4j)
+└── voicetext-extend/                    # 扩展组件
+    └── voicetext-xxl-job/               # 保留原定时任务
 ```
 
 ---
 
-## 1.3 数据库设计（扩展RuoYi-Vue-Plus）
+## 1.3 数据库设计（扩展voicetext-Vue-Plus）
 
 ### 1.3.1 租户资源表 (tenant_resource)
 
@@ -253,21 +253,21 @@ CREATE TABLE audio_process_task (
 <!-- 新增公共音频模块定义 -->
 <dependency>
     <groupId>org.dromara</groupId>
-    <artifactId>ruoyi-common-audio</artifactId>
+    <artifactId>voicetext-common-audio</artifactId>
     <version>${revision}</version>
 </dependency>
 
 <!-- 新增租户资源模块定义 -->
 <dependency>
     <groupId>org.dromara</groupId>
-    <artifactId>ruoyi-tenant-resource</artifactId>
+    <artifactId>voicetext-tenant-resource</artifactId>
     <version>${revision}</version>
 </dependency>
 
 <!-- 新增AI助手模块定义 -->
 <dependency>
     <groupId>org.dromara</groupId>
-    <artifactId>ruoyi-ai-assistant</artifactId>
+    <artifactId>voicetext-ai-assistant</artifactId>
     <version>${revision}</version>
 </dependency>
 ```
@@ -485,7 +485,7 @@ CREATE TABLE audio_process_task (
 
 ---
 
-# 三、RuoYi-Vue-Plus 原有功能扩展
+# 三、voicetext-Vue-Plus 原有功能扩展
 
 ## 3.1 租户管理扩展
 
@@ -971,7 +971,7 @@ GET /tenant/share/list
         ▼                     ▼                     ▼
 ┌─────────────────┐   ┌─────────────────┐   ┌─────────────────┐
 │   Web服务集群    │   │   Web服务集群    │   │   Web服务集群    │
-│ RuoYi-Admin节点1│   │ RuoYi-Admin节点2│   │ RuoYi-Admin节点3│
+│ voicetext-Admin节点1│   │ voicetext-Admin节点2│   │ voicetext-Admin节点3│
 │  (无状态)       │   │  (无状态)       │   │  (无状态)       │
 └─────────────────┘   └─────────────────┘   └─────────────────┘
         │                      │                      │
@@ -1036,7 +1036,7 @@ services:
               capabilities: [gpu]
     restart: always
     networks:
-      - ruoyi-network
+      - voicetext-network
 
   # 新增：Coqui TTS 服务
   tts-service:
@@ -1061,13 +1061,13 @@ services:
               capabilities: [gpu]
     restart: always
     networks:
-      - ruoyi-network
+      - voicetext-network
 
   # 新增：音频处理 Worker (处理FFmpeg/TarsosDSP任务)
   audio-worker:
-    image: ruoyi-audio-worker:latest
+    image: voicetext-audio-worker:latest
     build:
-      context: ./ruoyi-modules/ruoyi-audio-worker
+      context: ./voicetext-modules/voicetext-audio-worker
       dockerfile: Dockerfile
     container_name: audio-worker
     environment:
@@ -1084,13 +1084,13 @@ services:
       - tts-service
     restart: always
     networks:
-      - ruoyi-network
+      - voicetext-network
 
-  # RuoYi-Admin 服务（扩展环境变量）
-  ruoyi-admin:
-    image: ruoyi-admin:latest
+  # voicetext-Admin 服务（扩展环境变量）
+  voicetext-admin:
+    image: voicetext-admin:latest
     build:
-      context: ./ruoyi-admin
+      context: ./voicetext-admin
       dockerfile: Dockerfile
     environment:
       - SPRING_PROFILES_ACTIVE=prod
@@ -1123,7 +1123,7 @@ services:
 
 ```
 阶段一：基础架构搭建 (2周)
-├── 创建 ruoyi-common-audio 模块
+├── 创建 voicetext-common-audio 模块
 ├── 集成 TarsosDSP 基础音频处理
 ├── 集成 FFmpeg 格式转换
 ├── 扩展数据库表(资源表/共享表)
@@ -1183,7 +1183,7 @@ services:
 
 ## 8.1 融合改造成果
 
-本项目基于 **RuoYi-Vue-Plus** 框架，成功整合了多租户音频处理能力，实现了：
+本项目基于 **voicetext-Vue-Plus** 框架，成功整合了多租户音频处理能力，实现了：
 
 1. **架构融合**：充分利用原框架的多租户、权限、任务调度、OSS存储等能力，新增音频处理模块无缝集成
 2. **租户隔离**：物理文件隔离 + 数据库租户ID过滤 + 全链路权限校验，三层保障数据安全
