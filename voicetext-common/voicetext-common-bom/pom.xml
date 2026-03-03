@@ -179,6 +179,12 @@
                 <version>${revision}</version>
             </dependency>
 
+            <!-- audio-->
+            <dependency>
+                <groupId>org.dromara</groupId>
+                <artifactId>voicetext-common-audio</artifactId>
+                <version>${revision}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 

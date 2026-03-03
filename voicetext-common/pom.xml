@@ -8,6 +8,12 @@
         <version>${revision}</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
+    <artifactId>voicetext-common</artifactId>
+    <packaging>pom</packaging>
+    <description>
+        common 通用模块
+    </description>
+
 
     <modules>
         <module>voicetext-common-bom</module>
@@ -34,13 +40,6 @@
         <module>voicetext-common-tenant</module>
         <module>voicetext-common-websocket</module>
         <module>voicetext-common-sse</module>
+        <module>voicetext-common-audio</module>
     </modules>
-
-    <artifactId>voicetext-common</artifactId>
-    <packaging>pom</packaging>
-
-    <description>
-        common 通用模块
-    </description>
-
 </project>
