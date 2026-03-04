@@ -1,100 +1,215 @@
 # VoiceText Weaver 多租户音频处理平台
+
+## 一、核心功能
+
+| 功能模块 | 核心特性 | 说明 |
+|---------|----------|------|
+| 多租户管理 | 租户隔离、套餐配额、全局数据源隔离 | Mybatis-Plus多租户插件 |
+| 用户/部门/岗位 | 用户管理、部门树、岗位字典 | 租户自管理 |
+| 菜单与权限 | 动态路由、按钮级权限、Sa-Token认证 | RBAC模型 |
+| 角色管理 | 租户内角色、数据权限 | 可扩展租户管理员 |
+| 字典管理 | 全局/租户级字典 | 音频格式、任务类型等 |
+| 操作日志 | 所有资源变更、登录日志 | 注解@Log |
+| OSS存储 | MinIO/阿里云/七牛云适配 | 统一存储音频/模型/图片 |
+| 任务调度 | SnailJob分布式调度、失败重试 | 处理长任务 |
+| 缓存与锁 | Redis(Redisson) + Lock4j | 分布式锁/队列 |
+
+## 二、租户资源池 & 共享 (ruoyi-tenant-resource)
+
+| 功能 | 描述 | 权限/备注 |
+|------|------|-----------|
+| 音频/文本资源上传 | 分片上传、断点续传、格式检测 | tenant:resource:upload |
+| 资源列表/查询 | 按类型/权限/日期过滤，波形预览 | tenant:resource:list |
+| 资源权限控制 | 私有/租户共享/跨租户授权 | permission_type字段 |
+| 跨租户共享 | 按租户或用户授权，有效期/权限码(view/edit/download/merge) | resource_share表 |
+| 资源回收站 | 软删除、批量恢复、自动清理 | resource_status=0 |
+| 配额统计 | 存储用量、处理次数、TTS字符数 | sys_tenant扩展 |
+| 资源波形/预览 | 实时波形、频谱图、VAD结果 | Wavesurfer.js |
+
+## 三、音频处理核心 (ruoyi-common-audio)
+
+| 功能 | 技术实现 | 任务类型 |
+|------|----------|----------|
+| 格式转换 | FFmpeg封装 (mp3/wav/flac) | async, audio:convert |
+| 音频裁剪/拼接 | FFmpeg + TarsosDSP | async, audio:edit |
+| 音量调整/归一化 | TarsosDSP | async |
+| 语音活动检测(VAD) | 能量/谱熵，返回语音段落 | 实时/异步 |
+| 基频/音高分析 | TarsosDSP PitchDetector | audio:analyze |
+| 语音转文字(Whisper) | HTTP调用独立服务 | transcription |
+| 文字转语音(TTS) | Coqui TTS / 本地模型池 | tts |
+| 声纹/情绪识别(预留) | 扩展接口 | -- |
+| 音频指纹/特征提取 | MFCC、频谱质心、过零率 | 用于检索 |
+
+## 四、声音训练 · 克隆 · 模型管理 (VoiceClone)
+
+| 功能 | 详细描述 | 关键点 |
+|------|----------|--------|
+| 声音训练任务 | 上传10~30分钟音频，训练个性化声音模型(So-VITS-SVC/OpenVoice) | voice:train:create |
+| 训练进度监控 | 实时轮次、loss曲线、中间示例生成 | WebSocket轮询 |
+| 模型版本管理 | 每个租户最多5个模型，支持设为默认 | voice_model表 |
+| 声音克隆合成 | 输入文本+选择模型，生成克隆语音 | voice:clone:use |
+| 模型分享/复用 | 跨租户共享声音模型(需授权) | 预留字段 |
+| 音频质量检测 | 训练前自动检测底噪、时长、采样率 | 优化建议 |
+| 示例音频生成 | 训练过程中每N轮合成示例 | 可播放对比 |
+| 模型下载/导出 | 训练完成的模型文件打包 | 租户管理员权限 |
+
+## 五、项目管理 & 音频合并工坊 (Project)
+
+| 功能 | 说明 | 操作/规则 |
+|------|------|-----------|
+| 项目创建/删除/编辑 | 基础CRUD，支持项目名称、描述、输出格式 | project:create |
+| 音频资源添加 | 从自有或共享资源选取音频(跨租户可见) | 需merge权限 |
+| 序号管理 | 每个音频分配sequence_no决定合并顺序 | 拖拽重排 |
+| 片段截取 | 对音频设置start/end，仅合并选定区间 | 精度0.1秒 |
+| 音量/淡入淡出 | 独立调整每个片段的音量、淡入/淡出时长 | 实时预览 |
+| 合并执行(异步) | 按照序号及参数生成最终音频，存入资源库 | SnailJob任务 |
+| 项目状态流转 | 正常→已完成→已归档→回收站→恢复/永久删除 | project_status字段 |
+| 回收站与恢复 | 软删除项目，支持批量恢复，30天后自动清理 | project:recover |
+| 项目预览 | 合并前试听当前序列(模拟混合) | 波形叠加预览 |
+| 跨租户资源协作 | 租户B/C的资源若共享了merge权限，可被租户A项目引用 | allow_merge字段 |
+| 合并模板 | 保存常用合并配置(播客模板、有声书模板) | 后续迭代 |
+
+## 六、权限 & 租户配额 (扩展)
+
+| 权限点/配额 | 说明 | 默认值 |
+|-------------|------|--------|
+| voice:train:create | 发起声音训练 | 租户管理员/普通用户 |
+| voice:model:view | 查看声音模型列表 | 全租户内 |
+| project:merge | 执行合并操作(可能消耗配额) | 按次计费 |
+| resource:share:merge | 共享资源时允许被用于合并 | 资源创建者可配置 |
+| storage_quota (租户) | 存储配额(字节) | 默认10GB |
+| voice_model_quota | 最大声音模型数 | 5个 |
+| project_quota | 最大项目数(含回收站) | 50个 |
+| clone_quota (月) | 每月克隆次数 | 1000次 |
+| merge_quota (月) | 每月合并任务次数 | 500次 |
+
+## 七扩展AI能力
+
+- AI助手(RAG)：基于知识库问答，结合音频转写内容 (ruoyi-ai-assistant)
+- 音频知识图谱：存储音频实体、说话人、主题标签，Neo4j图查询
+- 智能摘要：对长音频转文字后生成摘要/关键词 (需大模型)
+
+## 八、前端UI/UX (Vue3 + Element Plus)
+
+| 视图 | 组件/能力 |
+|------|-----------|
+| 资源池主界面 | 列表/卡片切换、权限标签、租户存储用量条 |
+| 音频详情页 | 波形预览(Wavesurfer)、播放器、转写文本对照 |
+| 声音训练向导 | 多步表单、音频质检、训练进度条、中间结果试听 |
+| 项目编辑器 | 拖拽排序轨道、片段截取滑块、音量旋钮、淡入淡出滑块 |
+| 资源共享弹窗 | 按租户/用户搜索、权限组合、过期时间 |
+| 回收站视图 | 删除时间、剩余天数、恢复按钮 |
+| 仪表盘统计 | 资源用量、任务趋势、热门模型 |
+
+## 九、运维 & 监控
+
+- Docker编排：MySQL、Redis、MinIO、Whisper、TTS、voice-clone、model-train (GPU分配)
+- Prometheus监控：音频任务队列、GPU利用率、模型训练时长、克隆QPS
+- 日志采集：ELK收集操作日志、训练日志、识别错误
+- 备份策略：每日备份MySQL、模型文件、OSS增量同步
+
 ---
 
-# 一、项目整体架构设计
 
-## 1.1 技术栈整合方案
+### 一、项目整体架构设计
 
-### 后端技术栈
+#### 1.1 技术栈整合方案
 
-| 技术领域      | 核心框架/工具                 | 版本           | 说明              |
-| --------- | ----------------------- | ------------ | --------------- |
-| **基础框架**  | Spring Boot             | 3.5.10       | 原框架已集成          |
-| **多租户核心** | Mybatis-Plus 多租户插件      | 3.5.16       | 原框架已深度集成        |
-| **权限认证**  | Sa-Token                | 1.44.0       | 原框架已集成，扩展租户级权限  |
-| **音频处理**  | TarsosDSP + FFmpeg      | 2.5          | 新增音频分析核心        |
-| **语音识别**  | Whisper(Java封装)         | 20231106     | 通过JNI调用或HTTP服务  |
-| **语音合成**  | Coqui TTS(HTTP服务)       | 0.13.3       | 独立服务部署          |
-| **分布式任务** | SnailJob                | 1.9.0        | 原框架已集成，处理TTS长任务 |
-| **分布式锁**  | Lock4j + Redisson       | 2.2.7/3.52.0 | 原框架已集成          |
-| **对象存储**  | Minio/AWS S3            | 2.28.22      | 原框架已集成，存储音频文件   |
-| **缓存**    | Redis(Redisson)         | 3.52.0       | 原框架已集成          |
-| **消息队列**  | Redis Stream/队列         | -            | 利用Redisson分布式队列 |
-| **图数据库**  | Neo4j                   | 5.26.0       | 原框架已支持，用于知识图谱   |
-| **AI能力**  | Spring AI + LangChain4j | 1.0.2/1.3.0  | 原框架已集成，扩展RAG能力  |
+**后端技术栈**
 
-### 前端技术栈
+| 技术领域 | 核心框架/工具 | 版本 | 说明 |
+|---------|--------------|------|------|
+| 基础框架 | Spring Boot | 3.5.10 | 原框架已集成 |
+| 多租户核心 | Mybatis-Plus 多租户插件 | 3.5.16 | 原框架已深度集成 |
+| 权限认证 | Sa-Token | 1.44.0 | 原框架已集成，扩展租户级权限 |
+| 音频处理 | TarsosDSP + FFmpeg | 2.5 | 新增音频分析核心 |
+| 语音识别 | Whisper(Java封装) | 20231106 | 通过JNI调用或HTTP服务 |
+| 语音合成 | Coqui TTS(HTTP服务) | 0.13.3 | 独立服务部署 |
+| 声音克隆 | So-VITS-SVC / OpenVoice | - | 新增声音训练与克隆 |
+| 分布式任务 | SnailJob | 1.9.0 | 原框架已集成，处理TTS长任务 |
+| 分布式锁 | Lock4j + Redisson | 2.2.7/3.52.0 | 原框架已集成 |
+| 对象存储 | Minio/AWS S3 | 2.28.22 | 原框架已集成，存储音频文件 |
+| 缓存 | Redis(Redisson) | 3.52.0 | 原框架已集成 |
+| 消息队列 | Redis Stream/队列 | - | 利用Redisson分布式队列 |
+| 图数据库 | Neo4j | 5.26.0 | 原框架已支持，用于知识图谱 |
+| AI能力 | Spring AI + LangChain4j | 1.0.2/1.3.0 | 原框架已集成，扩展RAG能力 |
 
-| 技术领域      | 框架/工具              | 版本    | 说明        |
-| --------- | ------------------ | ----- | --------- |
-| **基础框架**  | Vue 3 + TypeScript | -     | 原框架已采用    |
-| **UI组件**  | Element Plus       | -     | 原框架已采用    |
-| **音频可视化** | Wavesurfer.js      | 7.8.0 | 新增音频波形显示  |
-| **音频录制**  | RecordRTC          | 5.6.2 | 新增浏览器录音功能 |
+**前端技术栈**
 
----
+| 技术领域 | 框架/工具 | 版本 | 说明 |
+|---------|----------|------|------|
+| 基础框架 | Vue 3 + TypeScript | - | 原框架已采用 |
+| UI组件 | Element Plus | - | 原框架已采用 |
+| 音频可视化 | Wavesurfer.js | 7.8.0 | 新增音频波形显示 |
+| 音频录制 | RecordRTC | 5.6.2 | 新增浏览器录音功能 |
+| 音频剪辑 | WaveSurfer Regions | - | 音频片段选择与编辑 |
 
-## 1.2 模块架构设计
+#### 1.2 模块架构设计
 
 ```
-voicetext-veaver-plus/
+voicetext-weaver-plus/
 ├── voicetext-admin/                    # 系统启动模块
-├── voicetext-common/                   # 通用工具模块
-│   ├── voicetext-common-core/          # 核心工具
-│   ├── voicetext-common-redis/         # Redis缓存
-│   ├── voicetext-common-oss/           # 对象存储
-│   ├── voicetext-common-satoken/       # 权限认证
-│   └── voicetext-common-audio/         # 【新增】音频处理核心
+├── voicetext-common/                    # 通用工具模块
+│   ├── voicetext-common-core/           # 核心工具
+│   ├── voicetext-common-redis/          # Redis缓存
+│   ├── voicetext-common-oss/            # 对象存储
+│   ├── voicetext-common-satoken/        # 权限认证
+│   └── voicetext-common-audio/          # 【新增】音频处理核心
 │       ├── src/main/java/org/dromara/audio/
-│       │   ├── core/                # 音频核心处理
-│       │   │   ├── AudioProcessor.java        # 音频处理接口
-│       │   │   ├── TarsosAudioProcessor.java  # TarsosDSP实现
-│       │   │   ├── FFmpegAudioProcessor.java  # FFmpeg实现
-│       │   │   └── AudioFeatureExtractor.java # 音频特征提取
-│       │   ├── whisper/             # Whisper语音识别
-│       │   │   ├── WhisperService.java        # 识别服务
-│       │   │   └── WhisperModelManager.java   # 模型管理
+│       │   ├── core/                 # 音频核心处理
+│       │   │   ├── AudioProcessor.java
+│       │   │   ├── TarsosAudioProcessor.java
+│       │   │   ├── FFmpegAudioProcessor.java
+│       │   │   └── AudioFeatureExtractor.java
+│       │   ├── whisper/              # Whisper语音识别
+│       │   │   ├── WhisperService.java
+│       │   │   └── WhisperModelManager.java
 │       │   ├── tts/                  # TTS语音合成
-│       │   │   ├── TtsService.java            # 合成服务
-│       │   │   └── TtsTaskConsumer.java       # 异步任务消费
-│       │   └── dsp/                   # 数字信号处理
-│       │       ├── AudioAnalyzer.java         # 音频分析
-│       │       └── VoiceActivityDetector.java # 语音活动检测
-│       └── pom.xml                    # 新增模块依赖
-├── voicetext-modules/                   # 业务模块
-│   ├── voicetext-system/                # 系统管理(扩展租户资源)
-│   ├── voicetext-workflow/              # 工作流(音频审核流程)
-│   ├── voicetext-tenant-resource/       # 【新增】租户资源池管理
+│       │   │   ├── TtsService.java
+│       │   │   └── TtsTaskConsumer.java
+│       │   ├── voiceclone/           # 声音克隆模块
+│       │   │   ├── VoiceTrainService.java
+│       │   │   ├── VoiceCloneService.java
+│       │   │   ├── VoiceModelManager.java
+│       │   │   └── dto/
+│       │   ├── project/              # 项目管理模块
+│       │   │   ├── AudioProjectService.java
+│       │   │   ├── AudioMergeService.java
+│       │   │   ├── SequenceManager.java
+│       │   │   └── dto/
+│       │   └── dsp/                  # 数字信号处理
+│       │       ├── AudioAnalyzer.java
+│       │       └── VoiceActivityDetector.java
+│       └── pom.xml
+├── voicetext-modules/                    # 业务模块
+│   ├── voicetext-system/                 # 系统管理
+│   ├── voicetext-workflow/               # 工作流
+│   ├── voicetext-tenant-resource/        # 【新增】租户资源池管理
 │   │   ├── src/main/java/org/dromara/tenantresource/
-│   │   │   ├── controller/           # 资源控制器
-│   │   │   │   ├── AudioResourceController.java  # 音频资源API
-│   │   │   │   ├── TextResourceController.java   # 文本资源API
-│   │   │   │   └── ResourceShareController.java  # 资源共享API
-│   │   │   ├── service/               # 业务服务
-│   │   │   │   ├── IResourcePoolService.java    # 资源池服务
-│   │   │   │   ├── IResourcePermissionService.java # 权限服务
-│   │   │   │   └── impl/               # 实现类
-│   │   │   ├── mapper/                 # 数据访问
-│   │   │   │   ├── TenantResourceMapper.java    # 资源表Mapper
-│   │   │   │   └── ResourceShareMapper.java     # 共享表Mapper
-│   │   │   ├── domain/                  # 领域模型
-│   │   │   │   ├── TenantResource.java         # 资源实体
-│   │   │   │   ├── ResourceShare.java          # 共享实体
-│   │   │   │   └── vo/                   # 视图对象
-│   │   │   └── config/                   # 配置类
+│   │   │   ├── controller/
+│   │   │   ├── service/
+│   │   │   ├── mapper/
+│   │   │   └── domain/
 │   │   └── pom.xml
-│   ├── voicetext-ai-assistant/          # 【新增】AI助手模块(整合Spring AI)
-│   └── voicetext-knowledge-graph/       # 【新增】知识图谱(Neo4j)
-└── voicetext-extend/                    # 扩展组件
-    └── voicetext-xxl-job/               # 保留原定时任务
+│   ├── voicetext-ai-gateway/             # 【新增】AI服务网关
+│   │   ├── src/main/java/org/dromara/aigateway/
+│   │   │   ├── api/                   # 统一AI接口
+│   │   │   ├── adapter/               # 服务适配器
+│   │   │   │   ├── WhisperAdapter.java
+│   │   │   │   ├── CoquiTtsAdapter.java
+│   │   │   │   └── VoiceCloneAdapter.java
+│   │   │   ├── router/                # 服务路由
+│   │   │   └── fallback/              # 降级处理
+│   │   └── pom.xml
+│   ├── voicetext-ai-assistant/           # AI助手模块
+│   └── voicetext-knowledge-graph/        # 知识图谱
+└── voicetext-extend/                     # 扩展组件
+    └── voicetext-xxl-job/                # 定时任务
 ```
 
----
+#### 1.3 数据库设计
 
-## 1.3 数据库设计（扩展voicetext-Vue-Plus）
-
-### 1.3.1 租户资源表 (tenant_resource)
-
+**1.3.1 租户资源表 (tenant_resource)**
 ```sql
 CREATE TABLE tenant_resource (
     id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '资源ID',
@@ -111,6 +226,7 @@ CREATE TABLE tenant_resource (
     transcription TEXT COMMENT '语音转文本内容',
     permission_type VARCHAR(20) NOT NULL DEFAULT 'private' COMMENT '权限类型: private/tenant_shared/cross_tenant',
     resource_status TINYINT DEFAULT 1 COMMENT '状态: 0删除 1正常 2处理中',
+    ref_count INT DEFAULT 0 COMMENT '引用计数(项目引用次数)',
     remark VARCHAR(500) COMMENT '备注',
     create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
     update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -122,8 +238,7 @@ CREATE TABLE tenant_resource (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='租户资源表';
 ```
 
-### 1.3.2 资源共享表 (resource_share)
-
+**1.3.2 资源共享表 (resource_share)**
 ```sql
 CREATE TABLE resource_share (
     id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '共享ID',
@@ -131,9 +246,12 @@ CREATE TABLE resource_share (
     source_tenant_id BIGINT NOT NULL COMMENT '来源租户ID',
     target_tenant_id BIGINT COMMENT '目标租户ID',
     target_user_id BIGINT COMMENT '目标用户ID',
-    permission_code VARCHAR(50) NOT NULL COMMENT '权限编码: view/edit/download/delete',
+    permission_code VARCHAR(50) NOT NULL COMMENT '权限编码: view/edit/download/delete/merge',
     expire_time DATETIME COMMENT '过期时间',
     share_status TINYINT DEFAULT 1 COMMENT '状态: 0失效 1生效',
+    allow_merge TINYINT DEFAULT 0 COMMENT '允许合并: 0否 1是',
+    merge_limit INT DEFAULT 0 COMMENT '合并使用次数限制(0无限制)',
+    merge_used INT DEFAULT 0 COMMENT '已使用合并次数',
     create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
     create_by BIGINT COMMENT '创建者',
     update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -143,8 +261,7 @@ CREATE TABLE resource_share (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='资源共享表';
 ```
 
-### 1.3.3 音频处理任务表 (audio_process_task)
-
+**1.3.3 音频处理任务表 (audio_process_task)**
 ```sql
 CREATE TABLE audio_process_task (
     id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '任务ID',
@@ -152,11 +269,12 @@ CREATE TABLE audio_process_task (
     resource_id BIGINT COMMENT '关联资源ID',
     tenant_id BIGINT NOT NULL COMMENT '租户ID',
     creator_id BIGINT NOT NULL COMMENT '创建者',
-    task_type VARCHAR(30) NOT NULL COMMENT '任务类型: transcription/tts/analysis',
+    task_type VARCHAR(30) NOT NULL COMMENT '任务类型: transcription/tts/analysis/voice_train/voice_clone/merge',
     task_status VARCHAR(20) DEFAULT 'pending' COMMENT '状态: pending/running/success/failed',
     task_config JSON COMMENT '任务配置参数',
     task_result JSON COMMENT '任务结果',
     error_msg TEXT COMMENT '错误信息',
+    priority INT DEFAULT 2 COMMENT '优先级: 0实时 1高 2普通 3低',
     start_time DATETIME COMMENT '开始时间',
     end_time DATETIME COMMENT '结束时间',
     duration INT COMMENT '耗时(秒)',
@@ -164,31 +282,140 @@ CREATE TABLE audio_process_task (
     update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_tenant_id (tenant_id),
     INDEX idx_task_status (task_status),
-    INDEX idx_task_type (task_type)
+    INDEX idx_task_type (task_type),
+    INDEX idx_priority (priority)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='音频处理任务表';
 ```
 
----
+**1.3.4 声音模型表 (voice_model)**
+```sql
+CREATE TABLE voice_model (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '模型ID',
+    model_no VARCHAR(64) NOT NULL UNIQUE COMMENT '模型编号',
+    model_name VARCHAR(100) NOT NULL COMMENT '模型名称',
+    tenant_id BIGINT NOT NULL COMMENT '租户ID',
+    creator_id BIGINT NOT NULL COMMENT '创建者',
+    source_resource_id BIGINT COMMENT '来源音频资源ID',
+    model_type VARCHAR(20) NOT NULL COMMENT '模型类型: so-vits-svc/openvoice',
+    model_path VARCHAR(500) COMMENT '模型存储路径',
+    model_config JSON COMMENT '模型配置参数',
+    sample_audio_url VARCHAR(500) COMMENT '示例音频URL',
+    train_duration INT COMMENT '训练时长(分钟)',
+    train_status VARCHAR(20) DEFAULT 'pending' COMMENT '训练状态: pending/training/success/failed',
+    train_progress INT DEFAULT 0 COMMENT '训练进度(0-100)',
+    train_task_id BIGINT COMMENT '训练任务ID',
+    quality_score DECIMAL(3,2) COMMENT '质量评分(MOS分1-5)',
+    similarity_score DECIMAL(3,2) COMMENT '相似度评分',
+    use_scene VARCHAR(50) COMMENT '推荐使用场景',
+    is_default TINYINT DEFAULT 0 COMMENT '是否默认模型',
+    remark VARCHAR(500) COMMENT '备注',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_tenant_id (tenant_id),
+    INDEX idx_creator_id (creator_id),
+    INDEX idx_train_status (train_status),
+    FOREIGN KEY (tenant_id) REFERENCES sys_tenant(id),
+    FOREIGN KEY (source_resource_id) REFERENCES tenant_resource(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='声音模型表';
+```
 
-## 1.4 扩展POM.xml依赖（新增内容）
+**1.3.5 音频项目表 (audio_project)**
+```sql
+CREATE TABLE audio_project (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '项目ID',
+    project_no VARCHAR(64) NOT NULL UNIQUE COMMENT '项目编号',
+    project_name VARCHAR(200) NOT NULL COMMENT '项目名称',
+    project_desc TEXT COMMENT '项目描述',
+    tenant_id BIGINT NOT NULL COMMENT '租户ID',
+    creator_id BIGINT NOT NULL COMMENT '创建者',
+    project_status TINYINT DEFAULT 1 COMMENT '状态: 0删除 1正常 2已完成 3已归档',
+    output_resource_id BIGINT COMMENT '输出资源ID',
+    output_duration INT COMMENT '输出音频时长(秒)',
+    output_format VARCHAR(10) DEFAULT 'mp3' COMMENT '输出格式',
+    merge_config JSON COMMENT '合并配置',
+    current_version INT DEFAULT 1 COMMENT '当前版本号',
+    is_recovered TINYINT DEFAULT 0 COMMENT '是否已恢复: 0否 1是',
+    recover_from_id BIGINT COMMENT '恢复自哪个项目',
+    remark VARCHAR(500) COMMENT '备注',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_tenant_id (tenant_id),
+    INDEX idx_creator_id (creator_id),
+    INDEX idx_project_status (project_status),
+    FOREIGN KEY (tenant_id) REFERENCES sys_tenant(id),
+    FOREIGN KEY (output_resource_id) REFERENCES tenant_resource(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='音频项目表';
+```
 
-在原有 `pom.xml` 中添加以下依赖声明：
+**1.3.6 项目音频明细表 (project_audio_detail)**
+```sql
+CREATE TABLE project_audio_detail (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '明细ID',
+    project_id BIGINT NOT NULL COMMENT '项目ID',
+    resource_id BIGINT NOT NULL COMMENT '资源ID',
+    source_tenant_id BIGINT NOT NULL COMMENT '来源租户ID',
+    audio_name VARCHAR(200) COMMENT '音频名称',
+    audio_duration INT COMMENT '音频时长(秒)',
+    sequence_no INT NOT NULL COMMENT '序号',
+    start_time DECIMAL(10,2) COMMENT '截取开始时间(秒)',
+    end_time DECIMAL(10,2) COMMENT '截取结束时间(秒)',
+    volume_adjust DECIMAL(4,2) DEFAULT 1.0 COMMENT '音量调整系数',
+    fade_in DECIMAL(5,2) DEFAULT 0 COMMENT '淡入时长(秒)',
+    fade_out DECIMAL(5,2) DEFAULT 0 COMMENT '淡出时长(秒)',
+    remark VARCHAR(500) COMMENT '备注',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_project_id (project_id),
+    INDEX idx_resource_id (resource_id),
+    FOREIGN KEY (project_id) REFERENCES audio_project(id),
+    FOREIGN KEY (resource_id) REFERENCES tenant_resource(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='项目音频明细表';
+```
+
+**1.3.7 项目版本表 (project_version) 【新增】**
+```sql
+CREATE TABLE project_version (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '版本ID',
+    project_id BIGINT NOT NULL COMMENT '项目ID',
+    version_no INT NOT NULL COMMENT '版本号',
+    snapshot JSON NOT NULL COMMENT '项目快照',
+    operator_id BIGINT COMMENT '操作人',
+    operation_type VARCHAR(20) COMMENT '操作类型: edit/merge/recover',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_project_version (project_id, version_no),
+    FOREIGN KEY (project_id) REFERENCES audio_project(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='项目版本表';
+```
+
+**1.3.8 资源访问日志表 (resource_access_log) 【新增】**
+```sql
+CREATE TABLE resource_access_log (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '日志ID',
+    resource_id BIGINT NOT NULL COMMENT '资源ID',
+    operator_tenant_id BIGINT NOT NULL COMMENT '操作租户ID',
+    operator_user_id BIGINT NOT NULL COMMENT '操作用户ID',
+    access_type VARCHAR(20) NOT NULL COMMENT '访问类型: view/download/merge',
+    access_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '访问时间',
+    result TINYINT DEFAULT 1 COMMENT '结果: 1成功 0失败',
+    fail_reason VARCHAR(200) COMMENT '失败原因',
+    INDEX idx_resource_id (resource_id),
+    INDEX idx_operator_tenant (operator_tenant_id),
+    INDEX idx_access_time (access_time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='资源访问日志表';
+```
+
+#### 1.4 扩展POM.xml依赖
 
 ```xml
 <!-- 在 properties 中添加版本定义 -->
 <properties>
-    <!-- 原有属性保持不变，新增以下 -->
-    
-    <!-- 音频处理库 -->
     <tarsos.dsp.version>2.5</tarsos.dsp.version>
     <ffmpeg.version>6.1.0-1.5.9</ffmpeg.version>
     <javacpp.version>1.5.9</javacpp.version>
-    
-    <!-- 语音识别与合成 -->
     <whisper.cpp.version>1.5.5</whisper.cpp.version>
     <coqui-tts.version>0.13.3</coqui-tts.version>
-    
-    <!-- 音频可视化 -->
+    <openvoice.version>1.0.0</openvoice.version>
+    <so-vits-svc.version>4.0</so-vits-svc.version>
     <jlayer.version>1.0.1</jlayer.version>
     <javazoom.version>1.1.2</javazoom.version>
 </properties>
@@ -196,861 +423,488 @@ CREATE TABLE audio_process_task (
 <!-- 在 dependencyManagement 中添加依赖管理 -->
 <dependencyManagement>
     <dependencies>
-        <!-- 原有依赖保持不变，新增以下 -->
-        
-        <!-- TarsosDSP 音频分析核心 -->
         <dependency>
             <groupId>be.tarsos.dsp</groupId>
             <artifactId>core</artifactId>
             <version>${tarsos.dsp.version}</version>
         </dependency>
         <dependency>
-            <groupId>be.tarsos.dsp</groupId>
-            <artifactId>jvm</artifactId>
-            <version>${tarsos.dsp.version}</version>
-        </dependency>
-        
-        <!-- JavaCPP FFmpeg 封装 -->
-        <dependency>
             <groupId>org.bytedeco</groupId>
             <artifactId>ffmpeg-platform</artifactId>
             <version>${ffmpeg.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.bytedeco</groupId>
-            <artifactId>javacpp</artifactId>
-            <version>${javacpp.version}</version>
-        </dependency>
-        
-        <!-- Java 音频处理 -->
-        <dependency>
-            <groupId>javazoom</groupId>
-            <artifactId>jlayer</artifactId>
-            <version>${jlayer.version}</version>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>okhttp</artifactId>
+            <version>4.12.0</version>
         </dependency>
         <dependency>
             <groupId>com.googlecode.soundlibs</groupId>
             <artifactId>mp3spi</artifactId>
             <version>1.9.5.4</version>
         </dependency>
-        
-        <!-- 音频特征提取 -->
-        <dependency>
-            <groupId>com.github.fracpete</groupId>
-            <artifactId>audiveris-fftw</artifactId>
-            <version>1.3</version>
-        </dependency>
-        
-        <!-- 语音识别HTTP客户端 -->
-        <dependency>
-            <groupId>com.squareup.okhttp3</groupId>
-            <artifactId>okhttp</artifactId>
-            <version>4.12.0</version>
-        </dependency>
     </dependencies>
 </dependencyManagement>
-
-<!-- 新增公共音频模块定义 -->
-<dependency>
-    <groupId>org.dromara</groupId>
-    <artifactId>voicetext-common-audio</artifactId>
-    <version>${revision}</version>
-</dependency>
-
-<!-- 新增租户资源模块定义 -->
-<dependency>
-    <groupId>org.dromara</groupId>
-    <artifactId>voicetext-tenant-resource</artifactId>
-    <version>${revision}</version>
-</dependency>
-
-<!-- 新增AI助手模块定义 -->
-<dependency>
-    <groupId>org.dromara</groupId>
-    <artifactId>voicetext-ai-assistant</artifactId>
-    <version>${revision}</version>
-</dependency>
 ```
 
----
+### 二、新增功能详细设计
 
-# 二、业务功能设计
+#### 2.1 声音训练与克隆功能
 
-## 2.1 多租户资源池业务模型
+**2.1.1 功能概述**
+租户通过上传音频文件训练个性化声音模型，并使用模型将文本合成为自己的声音。
 
-### 2.1.1 租户-用户-资源关系图
-
+**2.1.2 声音训练流程**
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                        平台层                                │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │                 租户管理(套餐/配额)                   │   │
-│  └─────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────┘
-                              │
-        ┌─────────────────────┼─────────────────────┐
-        ▼                     ▼                     ▼
-┌─────────────────┐   ┌─────────────────┐   ┌─────────────────┐
-│   租户A(科技)    │   │   租户B(教育)    │   │   租户C(媒体)    │
-│  ┌───────────┐  │   │  ┌───────────┐  │   │  ┌───────────┐  │
-│  │ 配额:100GB│  │   │  │ 配额:500GB│  │   │  │ 配额:1TB  │  │
-│  │ 已用:35GB │  │   │  │ 已用:210GB│  │   │  │ 已用:850GB│  │
-│  └───────────┘  │   │  └───────────┘  │   │  └───────────┘  │
-└─────────────────┘   └─────────────────┘   └─────────────────┘
-        │                      │                      │
-        ▼                      ▼                      ▼
-┌─────────────────┐   ┌─────────────────┐   ┌─────────────────┐
-│   用户管理       │   │   用户管理       │   │   用户管理       │
-│  ┌───────────┐  │   │  ┌───────────┐  │   │  ┌───────────┐  │
-│  │admin(管理)│  │   │  │admin(管理)│  │   │  │admin(管理)│  │
-│  │userA(编辑)│  │   │  │userB(编辑)│  │   │  │userC(只读)│  │
-│  │userB(只读)│  │   │  │userC(只读)│  │   │  │userD(编辑)│  │
-│  └───────────┘  │   │  └───────────┘  │   │  └───────────┘  │
-└─────────────────┘   └─────────────────┘   └─────────────────┘
-        │                      │                      │
-        └──────────┬───────────┴───────────┬──────────┘
-                   ▼                       ▼
-        ┌─────────────────┐       ┌─────────────────┐
-        │   资源池层       │       │   跨租户共享     │
-        │  ┌───────────┐  │       │  ┌───────────┐  │
-        │  │音频/文本资源│  │◄─────►│  │租户B→租户A│  │
-        │  │权限控制    │  │       │  │租户A→租户C│  │
-        │  │生命周期管理│  │       │  │有效期/权限│  │
-        │  └───────────┘  │       │  └───────────┘  │
-        └─────────────────┘       └─────────────────┘
+┌─────────┐     ┌─────────┐     ┌─────────┐     ┌─────────┐     ┌─────────┐
+│  用户   │     │  前端   │     │  后端   │     │AI网关   │     │训练服务 │
+└────┬────┘     └────┬────┘     └────┬────┘     └────┬────┘     └────┬────┘
+     │               │               │               │               │
+     │ 1.选择训练音频 │               │               │               │
+     ├──────────────►│               │               │               │
+     │               │ 2.创建训练任务 │               │               │
+     │               ├──────────────►│               │               │
+     │               │               │ 3.保存模型记录│               │
+     │               │               │ (voice_model) │               │
+     │               │               │ 4.调用训练API │               │
+     │               │               ├──────────────►│               │
+     │               │               │               │ 5.路由训练服务│
+     │               │               │               ├──────────────►│
+     │               │               │               │               │ 6.训练
+     │               │               │               │               │───┐
+     │               │               │               │               │   │
+     │               │               │               │               │◄──┘
+     │               │               │               │ 7.返回结果   │
+     │               │               │               │◄──────────────┤
+     │               │               │ 8.更新状态+质量评分│           │
+     │               │               │◄──────────────┤               │
+     │ 9.查询训练状态 │               │               │               │
+     ├──────────────►│ 10.查询       │               │               │
+     │               ├──────────────►│               │               │
+     │               │               │ 11.返回状态   │               │
+     │               │◄──────────────┤               │               │
+     │ 12.显示完成   │               │               │               │
+     │◄──────────────┤               │               │               │
 ```
 
-### 2.1.2 权限控制矩阵
-
-| 操作类型   | 资源创建者 | 同租户管理员  | 同租户普通用户  | 跨租户授权用户  | 跨租户未授权用户 |
-| ------ | ----- | ------- | -------- | -------- | -------- |
-| 查看资源列表 | ✅     | ✅       | ✅(可见共享)  | ✅(可见授权)  | ❌        |
-| 预览/播放  | ✅     | ✅       | ✅(共享资源)  | ✅(授权资源)  | ❌        |
-| 下载     | ✅     | ✅       | ⚠️(配置决定) | ⚠️(授权决定) | ❌        |
-| 编辑/修改  | ✅     | ✅       | ❌        | ❌        | ❌        |
-| 删除     | ✅     | ✅       | ❌        | ❌        | ❌        |
-| 权限配置   | ✅     | ⚠️(租户内) | ❌        | ❌        | ❌        |
-| 共享给他人  | ✅     | ✅       | ❌        | ❌        | ❌        |
-
-## 2.2 核心业务流程
-
-### 2.2.1 音频上传与处理流程
-
+**2.1.3 声音克隆流程**
 ```
-┌─────────┐     ┌─────────┐     ┌─────────┐     ┌─────────┐
-│  用户   │     │  前端   │     │  后端   │     │  OSS    │
-└────┬────┘     └────┬────┘     └────┬────┘     └────┬────┘
-     │               │               │               │
-     │ 1.选择音频文件 │               │               │
-     ├──────────────►│               │               │
-     │               │ 2.分片上传     │               │
-     │               ├──────────────►│               │
-     │               │               │ 3.存储至OSS   │
-     │               │               ├──────────────►│
-     │               │               │               │
-     │               │               │ 4.异步处理任务 │
-     │               │               │───┐           │
-     │               │               │   │ 创建任务   │
-     │               │               │◄──┘           │
-     │               │               │               │
-     │               │               │ 5.返回资源ID  │
-     │               │◄──────────────┤               │
-     │ 6.上传完成    │               │               │
-     │◄──────────────┤               │               │
-     │               │               │               │
-     │               │               │ 7.SnailJob调度│
-     │               │               │───┐           │
-     │               │               │   │ 音频处理   │
-     │               │               │◄──┘           │
-     │               │               │ 8.更新资源信息 │
-     │               │               │ (时长/转写)    │
-     │               │               │               │
-     │ 9.查看处理结果 │               │               │
-     ├──────────────►│ 10.查询资源   │               │
-     │               ├──────────────►│               │
-     │               │               │ 11.返回处理状态│
-     │               │◄──────────────┤               │
-     │ 12.显示波形/  │               │               │
-     │    转写文本   │               │               │
-     │◄──────────────┤               │               │
-     │               │               │               │
+┌─────────┐     ┌─────────┐     ┌─────────┐     ┌─────────┐     ┌─────────┐
+│  用户   │     │  前端   │     │  后端   │     │AI网关   │     │克隆服务 │
+└────┬────┘     └────┬────┘     └────┬────┘     └────┬────┘     └────┬────┘
+     │               │               │               │               │
+     │ 1.选择文本+   │               │               │               │
+     │   选择模型    │               │               │               │
+     ├──────────────►│               │               │               │
+     │               │ 2.创建克隆任务│               │               │
+     │               ├──────────────►│               │               │
+     │               │               │ 3.校验配额    │               │
+     │               │               │ 4.调用克隆API │               │
+     │               │               ├──────────────►│               │
+     │               │               │               │ 5.路由克隆服务│
+     │               │               │               ├──────────────►│
+     │               │               │               │               │ 6.推理合成
+     │               │               │               │               │───┐
+     │               │               │               │               │   │
+     │               │               │               │               │◄──┘
+     │               │               │               │ 7.返回音频   │
+     │               │               │               │◄──────────────┤
+     │               │               │ 8.保存资源    │               │
+     │               │               │ 9.更新配额    │               │
+     │               │               │◄──────────────┤               │
+     │ 10.返回结果   │               │               │               │
+     │◄──────────────┤               │               │               │
 ```
 
-### 2.2.2 跨租户资源共享流程
+**2.1.4 训练要求与参数**
 
-```
-┌─────────┐     ┌─────────┐     ┌─────────┐     ┌─────────┐
-│ 租户A用户│     │ 租户A   │     │ 租户B   │     │ 租户B用户│
-│ (创建者)│     │ 后端    │     │ 后端    │     │ (接收者)│
-└────┬────┘     └────┬────┘     └────┬────┘     └────┬────┘
-     │               │               │               │
-     │ 1.选择资源共享 │               │               │
-     ├──────────────►│               │               │
-     │               │ 2.校验权限    │               │
-     │               │───┐           │               │
-     │               │   │ 是创建者? │               │
-     │               │◄──┘           │               │
-     │               │               │               │
-     │               │ 3.填写共享信息│               │
-     │               │ (租户B/用户)   │               │
-     │               │               │               │
-     │               │ 4.创建共享记录│               │
-     │               │ (resource_share)             │
-     │               │               │               │
-     │ 5.共享成功    │               │               │
-     │◄──────────────┤               │               │
-     │               │               │ 6.推送通知    │
-     │               │               ├──────────────►│
-     │               │               │               │ 7.登录系统
-     │               │               │               │◄──┐
-     │               │               │               │   │
-     │               │               │               │ 8.查看共享
-     │               │               │               ├──►│
-     │               │               │               │   │
-     │               │ 9.请求资源预览│               │   │
-     │               │◄──────────────┤               │   │
-     │               │               │               │   │
-     │               │ 10.权限校验   │               │   │
-     │               │───┐           │               │   │
-     │               │   │ 有效期?   │               │   │
-     │               │   │ 权限匹配? │               │   │
-     │               │◄──┘           │               │   │
-     │               │               │               │   │
-     │               │ 11.返回资源   │               │   │
-     │               ├──────────────►│               │   │
-     │               │               │ 12.转发预览   │   │
-     │               │               ├──────────────►│   │
-     │               │               │               │   │
-     │               │               │               │   │
-     │               │               │               │   │
-```
+| 参数 | 说明 | 推荐值 | 备注 |
+|------|------|--------|------|
+| 音频时长 | 训练所需音频总时长 | 10-30分钟 | 越长效果越好 |
+| 音频质量 | 采样率/位深度 | 44.1kHz/16bit | 清晰无噪音 |
+| 音频格式 | 支持格式 | WAV/MP3 | 自动转换 |
+| 语音内容 | 内容多样性 | 覆盖各类发音 | 包含不同情感更好 |
+| 训练轮数 | 迭代次数 | 5000-20000 | 根据数据量调整 |
+| 训练耗时 | 预计时间 | 30-120分钟 | 依赖GPU性能 |
 
-## 2.3 音频处理功能设计
+#### 2.2 项目管理与音频合并功能
 
-### 2.3.1 音频处理能力矩阵
+**2.2.1 功能概述**
+租户创建音频项目，将多个音频文件按序号合并，支持片段截取、音量调整、淡入淡出等编辑功能。
 
-| 功能分类     | 具体功能           | 技术实现      | 是否异步 | 性能预估        |
-| -------- | -------------- | --------- | ---- | ----------- |
-| **基础处理** | 格式转换(MP3/WAV)  | FFmpeg    | ✅    | 10MB文件 < 2秒 |
-|          | 音频裁剪/拼接        | FFmpeg    | ✅    | < 1秒        |
-|          | 音量调整           | TarsosDSP | ✅    | < 1秒        |
-|          | 采样率转换          | TarsosDSP | ✅    | 依赖音频长度      |
-| **特征提取** | 波形图生成          | TarsosDSP | ❌    | 实时          |
-|          | 频谱分析           | TarsosDSP | ✅    | 1-3秒        |
-|          | 语音活动检测         | TarsosDSP | ✅    | 实时          |
-|          | 基频提取           | TarsosDSP | ✅    | 实时          |
-| **智能处理** | 语音转文字(Whisper) | HTTP调用    | ✅    | 1分钟音频 < 10秒 |
-|          | 文字转语音(TTS)     | HTTP调用    | ✅    | 100字 < 3秒   |
-|          | 声纹识别           | 扩展预留      | ✅    | 需模型支持       |
-|          | 情绪识别           | 扩展预留      | ✅    | 需模型支持       |
-
-### 2.3.2 音频处理任务状态机
-
-```
-                   ┌─────────────┐
-                   │  PENDING    │
-                   │  (待处理)    │
-                   └──────┬──────┘
-                          │ 任务调度
-                          ▼
-                   ┌─────────────┐
-              ┌───▶│  PROCESSING │◀───┐
-              │    │  (处理中)    │    │
-              │    └──────┬──────┘    │
-              │           │           │
-              │      处理完成          │ 失败重试(最多3次)
-              │           │           │
-              │           ▼           │
-              │    ┌─────────────┐    │
-              └────│   RETRY     │────┘
-                   │  (重试)     │
-                   └──────┬──────┘
-                          │
-        ┌─────────────────┼─────────────────┐
-        │                 │                 │
-        ▼                 ▼                 ▼
-┌─────────────┐   ┌─────────────┐   ┌─────────────┐
-│   SUCCESS   │   │   FAILED    │   │  TIMEOUT    │
-│  (成功)     │   │  (失败)     │   │  (超时)     │
-└─────────────┘   └─────────────┘   └─────────────┘
-        │                 │                 │
-        └─────────────────┼─────────────────┘
-                          │
-                          ▼
-                  ┌─────────────┐
-                  │  处理完成    │
-                  │ 结果写入资源 │
-                  └─────────────┘
-```
-
----
-
-# 三、voicetext-Vue-Plus 原有功能扩展
-
-## 3.1 租户管理扩展
-
-在原有租户管理基础上，增加资源配额管理：
-
+**2.2.2 操作撤销/重做实现**
 ```java
--- 租户表扩展
-ALTER TABLE sys_tenant 
-ADD COLUMN storage_quota BIGINT DEFAULT 10737418240 COMMENT '存储配额(字节)',
-ADD COLUMN storage_used BIGINT DEFAULT 0 COMMENT '已用存储(字节)',
-ADD COLUMN audio_process_quota INT DEFAULT 1000 COMMENT '月音频处理次数',
-ADD COLUMN audio_process_used INT DEFAULT 0 COMMENT '本月已用次数',
-ADD COLUMN tts_quota INT DEFAULT 500 COMMENT '月TTS字符数(万)',
-ADD COLUMN tts_used INT DEFAULT 0 COMMENT '本月已用TTS字符数';
-
-```
-
-## 3.2 用户管理扩展
-
-扩展用户表，增加资源相关字段：
-
-```sql
--- 用户表扩展
-ALTER TABLE sys_user 
-ADD COLUMN default_permission VARCHAR(20) DEFAULT 'view' COMMENT '默认资源权限',
-ADD COLUMN resource_notify TINYINT DEFAULT 1 COMMENT '资源通知开关',
-ADD COLUMN last_resource_time DATETIME COMMENT '最后操作资源时间';
-```
-
-## 3.3 菜单与权限扩展
-
-新增以下菜单项：
-
-| 菜单名称  | 父菜单  | 权限标识                    | 路由                       | 组件                      |
-| ----- | ---- | ----------------------- | ------------------------ | ----------------------- |
-| 资源池管理 | 系统管理 | tenant:resource:view    | /tenant/resource         | tenant/resource/index   |
-| 音频处理  | 资源池  | tenant:audio:process    | /tenant/audio            | tenant/audio/index      |
-| 资源共享  | 资源池  | tenant:share:view       | /tenant/share            | tenant/share/index      |
-| 共享给我的 | 资源池  | tenant:share:received   | /tenant/share/received   | tenant/share/received   |
-| 语音转文字 | 音频处理 | tenant:audio:transcribe | /tenant/audio/transcribe | tenant/audio/transcribe |
-| 文字转语音 | 音频处理 | tenant:audio:tts        | /tenant/audio/tts        | tenant/audio/tts        |
-| 音频分析  | 音频处理 | tenant:audio:analyze    | /tenant/audio/analyze    | tenant/audio/analyze    |
-
----
-
-# 四、接口设计
-
-## 4.1 资源管理接口
-
-### 4.1.1 资源上传
-
-```http
-POST /tenant/resource/upload
-Content-Type: multipart/form-data
-
-参数：
-- file: 文件(必填)
-- resource_type: 资源类型(audio/text)(必填)
-- permission_type: 权限类型(private/tenant_shared)(默认private)
-- remark: 备注(可选)
-
-响应：
-{
-    "code": 200,
-    "msg": "操作成功",
-    "data": {
-        "resourceId": 1001,
-        "resourceName": "test.mp3",
-        "resourceType": "audio",
-        "fileSize": 5242880,
-        "ossUrl": "https://oss.xxx.com/tenant_1/2026/02/28/123.mp3",
-        "permissionType": "private",
-        "createTime": "2026-02-28 10:30:00",
-        "taskId": 5001,  // 异步处理任务ID
-        "taskStatus": "pending"
+public class EditOperationStack {
+    private Stack<EditAction> undoStack = new Stack<>();
+    private Stack<EditAction> redoStack = new Stack<>();
+    private final ProjectService projectService;
+    
+    public void execute(EditAction action) {
+        action.execute();
+        undoStack.push(action);
+        redoStack.clear();
+        
+        // 保存版本快照
+        projectService.saveVersion(action.getProjectId());
     }
-}
-```
-
-### 4.1.2 资源列表查询
-
-```http
-GET /tenant/resource/list
-
-参数：
-- pageNum: 页码(默认1)
-- pageSize: 每页条数(默认20)
-- resourceType: 资源类型(audio/text)(可选)
-- permissionType: 权限类型(可选)
-- keyword: 关键词搜索(可选)
-- startTime: 开始时间(可选)
-- endTime: 结束时间(可选)
-- creatorId: 创建者ID(可选)
-
-响应：
-{
-    "code": 200,
-    "msg": "操作成功",
-    "data": {
-        "total": 100,
-        "rows": [
-            {
-                "resourceId": 1001,
-                "resourceName": "test.mp3",
-                "resourceType": "audio",
-                "fileSize": "5.2 MB",
-                "duration": "00:03:25",
-                "permissionType": "private",
-                "permissionTypeName": "私有",
-                "creatorName": "张三",
-                "creatorId": 1,
-                "createTime": "2026-02-28 10:30:00",
-                "canEdit": true,
-                "canDelete": true,
-                "canShare": true
-            }
-        ],
-        "summary": {
-            "totalAudio": 80,
-            "totalText": 20,
-            "totalSize": "15.6 GB",
-            "usedQuota": "35%"
+    
+    public void undo() {
+        if (!undoStack.isEmpty()) {
+            EditAction action = undoStack.pop();
+            action.undo();
+            redoStack.push(action);
+        }
+    }
+    
+    public void redo() {
+        if (!redoStack.isEmpty()) {
+            EditAction action = redoStack.pop();
+            action.execute();
+            undoStack.push(action);
         }
     }
 }
 ```
 
-## 4.2 音频处理接口
+**2.2.3 音频合并规则**
 
-### 4.2.1 语音转文字
+| 策略 | 说明 | 适用场景 |
+|------|------|----------|
+| 顺序合并 | 按序号从小到大顺序拼接 | 有声书、播客 |
+| 交叉混合 | 音频片段重叠混合 | 背景音乐+人声 |
+| 条件合并 | 根据音频特征智能拼接 | 对话场景 |
 
+**编辑参数示例**
+```json
+{
+  "mergeConfig": {
+    "global": {
+      "outputFormat": "mp3",
+      "bitrate": "192k",
+      "sampleRate": 44100,
+      "crossFade": 0.5
+    },
+    "tracks": [
+      {
+        "resourceId": 1001,
+        "sequence": 1,
+        "startTime": 10.5,
+        "endTime": 25.3,
+        "volume": 1.2,
+        "fadeIn": 0.3,
+        "fadeOut": 0.5,
+        "speed": 1.0
+      }
+    ]
+  }
+}
+```
+
+**2.2.4 项目状态流转**
+
+| 状态码 | 状态名称 | 说明 | 可操作 |
+|--------|----------|------|--------|
+| 1 | 正常 | 项目可编辑 | 编辑、合并、删除 |
+| 2 | 已完成 | 已生成输出文件 | 预览、下载、编辑 |
+| 3 | 已归档 | 只读状态 | 预览、下载、恢复 |
+| 0 | 已删除 | 软删除 | 恢复、永久删除 |
+
+### 三、接口设计
+
+#### 3.1 声音训练与克隆接口
+
+**3.1.1 创建训练任务**
 ```http
-POST /tenant/audio/transcribe
+POST /api/voice/train/create
 
 请求体：
 {
-    "resourceId": 1001,
-    "language": "zh",  // 语言代码
-    "model": "base",   // 模型大小: tiny/base/small/medium/large
-    "wordTimestamps": true,  // 是否返回时间戳
-    "callbackUrl": "https://api.xxx.com/callback"  // 回调地址(可选)
+    "modelName": "我的声音模型",
+    "sourceResourceIds": [1001, 1002, 1003],
+    "modelType": "so-vits-svc",
+    "trainConfig": {
+        "epochs": 10000,
+        "batchSize": 8,
+        "learningRate": 0.0001
+    }
 }
 
 响应：
 {
     "code": 200,
-    "msg": "操作成功",
     "data": {
-        "taskId": 5001,
-        "taskNo": "T202602281030001",
-        "taskStatus": "pending",
-        "estimatedTime": 15  // 预计耗时(秒)
+        "modelId": 5001,
+        "modelNo": "VM20260304120001",
+        "modelName": "我的声音模型",
+        "trainStatus": "pending",
+        "estimatedTime": 3600
     }
 }
 ```
 
-### 4.2.2 查询处理结果
-
+**3.1.2 查询训练状态**
 ```http
-GET /tenant/audio/task/{taskId}
+GET /api/voice/train/status/{modelId}
 
 响应：
 {
     "code": 200,
-    "msg": "操作成功",
     "data": {
-        "taskId": 5001,
-        "taskNo": "T202602281030001",
+        "modelId": 5001,
+        "trainStatus": "training",
+        "progress": 45,
+        "currentEpoch": 4500,
+        "totalEpochs": 10000,
+        "loss": 0.0234,
+        "eta": 1800,
+        "qualityScore": 4.2,
+        "similarityScore": 0.85,
+        "useScene": "有声书",
+        "sampleAudioUrl": "https://oss.xxx.com/sample/5001_preview.wav"
+    }
+}
+```
+
+**3.1.3 声音克隆合成**
+```http
+POST /api/voice/clone/synthesize
+
+请求体：
+{
+    "modelId": 5001,
+    "text": "欢迎使用VoiceText Weaver平台",
+    "config": {
+        "speed": 1.0,
+        "pitch": 1.0,
+        "format": "mp3"
+    }
+}
+
+响应：
+{
+    "code": 200,
+    "data": {
+        "taskId": 6001,
+        "taskStatus": "pending",
+        "estimatedTime": 5
+    }
+}
+
+GET /api/voice/clone/result/{taskId}
+
+响应：
+{
+    "code": 200,
+    "data": {
+        "taskId": 6001,
         "taskStatus": "success",
-        "taskType": "transcription",
         "result": {
-            "text": "今天天气真好，我们一起去公园玩吧。",
-            "segments": [
-                {
-                    "start": 0.5,
-                    "end": 2.3,
-                    "text": "今天天气真好"
-                },
-                {
-                    "start": 2.3,
-                    "end": 4.8,
-                    "text": "我们一起去公园玩吧"
-                }
-            ],
-            "language": "zh",
-            "duration": 4.8
-        },
-        "resourceId": 1001,
-        "resourceName": "test.mp3",
-        "startTime": "2026-02-28 10:30:05",
-        "endTime": "2026-02-28 10:30:20",
-        "duration": 15
+            "resourceId": 2001,
+            "resourceName": "克隆语音_20260304.mp3",
+            "duration": 8.5,
+            "ossUrl": "https://oss.xxx.com/tenant_1/clone/2001.mp3"
+        }
     }
 }
 ```
 
-### 4.2.3 文字转语音
+#### 3.2 项目管理接口
 
+**3.2.1 创建项目**
 ```http
-POST /tenant/audio/tts
+POST /api/project/create
 
 请求体：
 {
-    "text": "欢迎使用VoiceText Weaver平台，您的语音助手。",
-    "voice": "zh_female_1",  // 音色
-    "speed": 1.0,  // 语速 0.5-2.0
-    "pitch": 1.0,  // 音调
-    "format": "mp3",  // 输出格式
-    "callbackUrl": "https://api.xxx.com/callback"
+    "projectName": "有声书第一章",
+    "projectDesc": "制作我的第一本有声书",
+    "outputFormat": "mp3"
 }
 
 响应：
 {
     "code": 200,
-    "msg": "操作成功",
     "data": {
-        "taskId": 5002,
-        "taskNo": "T202602281035001",
+        "projectId": 1001,
+        "projectNo": "PJ202603041210001",
+        "projectName": "有声书第一章",
+        "projectStatus": 1
+    }
+}
+```
+
+**3.2.2 添加音频到项目**
+```http
+POST /api/project/{projectId}/add-audio
+
+请求体：
+{
+    "items": [
+        {
+            "resourceId": 1001,
+            "sourceTenantId": 1,
+            "sequenceNo": 1,
+            "startTime": 0,
+            "endTime": 120.5,
+            "volumeAdjust": 1.2,
+            "fadeIn": 0.3,
+            "fadeOut": 0.5
+        }
+    ]
+}
+
+响应：
+{
+    "code": 200,
+    "data": {
+        "addedCount": 1,
+        "totalDuration": 120.5,
+        "items": [{
+            "detailId": 5001,
+            "audioName": "开场白录音.mp3",
+            "sequenceNo": 1,
+            "duration": 120.5
+        }]
+    }
+}
+```
+
+**3.2.3 执行合并**
+```http
+POST /api/project/{projectId}/merge
+
+请求体：
+{
+    "outputName": "有声书第一章_最终版.mp3",
+    "mergeConfig": {
+        "crossFade": 0.8,
+        "normalize": true
+    }
+}
+
+响应：
+{
+    "code": 200,
+    "data": {
+        "taskId": 7001,
         "taskStatus": "pending",
-        "estimatedTime": 3
-    }
-}
-```
-
-### 4.2.4 音频分析
-
-```http
-POST /tenant/audio/analyze
-
-请求体：
-{
-    "resourceId": 1001,
-    "analysisTypes": ["waveform", "spectrum", "vad", "pitch"],
-    "parameters": {
-        "waveform": {
-            "width": 800,
-            "height": 200
-        },
-        "vad": {
-            "threshold": 0.1,
-            "minSpeechDuration": 0.5
-        }
+        "estimatedTime": 30
     }
 }
 
-响应：
-{
-    "code": 200,
-    "msg": "操作成功",
-    "data": {
-        "taskId": 5003,
-        "taskStatus": "running"
-    }
-}
-
-// 查询结果时
-GET /tenant/audio/analysis/{taskId}
+GET /api/project/merge/result/{taskId}
 
 响应：
 {
     "code": 200,
     "data": {
-        "waveform": {
-            "data": [0.1, 0.3, 0.5, ...],
-            "sampleRate": 100,
-            "duration": 10,
-            "imageUrl": "https://oss.xxx.com/waveform/123.png"
-        },
-        "spectrum": {
-            "imageUrl": "https://oss.xxx.com/spectrum/123.png",
-            "features": {
-                "mfcc": [...],
-                "centroid": 1250.5,
-                "rolloff": 3800.2
-            }
-        },
-        "vad": {
-            "segments": [
-                {"start": 0.2, "end": 3.5, "speech": true},
-                {"start": 3.8, "end": 7.2, "speech": true}
-            ],
-            "speechRatio": 0.65
-        },
-        "pitch": {
-            "mean": 185.3,
-            "max": 320.5,
-            "min": 95.2,
-            "contour": [180, 185, 190, ...]
+        "taskId": 7001,
+        "taskStatus": "success",
+        "result": {
+            "resourceId": 3001,
+            "resourceName": "有声书第一章_最终版.mp3",
+            "duration": 185.3,
+            "ossUrl": "https://oss.xxx.com/tenant_1/project/3001.mp3"
         }
     }
 }
 ```
 
-## 4.3 资源共享接口
-
-### 4.3.1 创建共享
-
+**3.2.4 操作撤销**
 ```http
-POST /tenant/share/create
-
-请求体：
-{
-    "resourceId": 1001,
-    "shareType": "tenant",  // user/tenant
-    "targetTenantId": 2,    // 目标租户ID(shareType=tenant时必填)
-    "targetUserId": 10,      // 目标用户ID(shareType=user时必填)
-    "permissionCode": "view",  // view/edit/download
-    "expireDays": 7,         // 过期天数(null为永久)
-    "remark": "项目合作资料"
-}
+POST /api/project/{projectId}/undo
 
 响应：
 {
     "code": 200,
-    "msg": "操作成功",
+    "msg": "撤销成功",
     "data": {
-        "shareId": 2001,
-        "shareCode": "SHR202602281050001",
-        "shareUrl": "https://platform.xxx.com/s/SHR202602281050001",
-        "expireTime": "2026-03-07 10:50:00"
+        "canUndo": true,
+        "canRedo": true
     }
 }
 ```
 
-### 4.3.2 共享列表
-
+**3.2.5 项目版本列表**
 ```http
-GET /tenant/share/list
-
-参数：
-- direction: out/in(发出的/收到的)
-- status: active/expired
+GET /api/project/{projectId}/versions
 
 响应：
 {
     "code": 200,
     "data": {
-        "total": 15,
-        "rows": [
+        "versions": [
             {
-                "shareId": 2001,
-                "resourceName": "project_intro.mp3",
-                "sourceTenantName": "科技公司",
-                "sourceUserName": "张三",
-                "targetTenantName": "教育机构",
-                "targetUserName": "李四",
-                "permissionType": "view",
-                "expireTime": "2026-03-07 10:50:00",
-                "shareTime": "2026-02-28 10:50:00",
-                "status": "active"
+                "versionNo": 3,
+                "operationType": "merge",
+                "operatorName": "张三",
+                "createTime": "2026-03-04 12:20:00"
+            },
+            {
+                "versionNo": 2,
+                "operationType": "edit",
+                "operatorName": "张三",
+                "createTime": "2026-03-04 12:15:00"
             }
         ]
     }
 }
 ```
 
----
+### 四、权限与配额扩展
 
-# 五、前端UI设计（基于Element Plus）
+#### 4.1 新增权限点
 
-## 5.1 资源池主界面
+| 权限标识 | 说明 | 适用角色 |
+|---------|------|----------|
+| voice:train:create | 创建声音训练任务 | 租户管理员/普通用户 |
+| voice:model:view | 查看声音模型 | 租户管理员/普通用户 |
+| voice:clone:use | 使用声音克隆 | 租户管理员/普通用户 |
+| project:create | 创建项目 | 租户管理员/普通用户 |
+| project:merge | 执行合并操作 | 租户管理员/普通用户 |
+| project:recover | 恢复已删除项目 | 租户管理员 |
+| resource:share:merge | 共享资源允许合并 | 资源创建者 |
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│  🏠 首页 > 资源池管理                                          │
-├─────────────────────────────────────────────────────────────┤
-│  ┌───────────────────────────────────────────────────────┐ │
-│  │ [租户: 科技公司 ▼]  [👤 张三 ▼]  [存储空间: 35GB/100GB ███████░░░░]│
-│  └───────────────────────────────────────────────────────┘ │
-│                                                             │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │  📁 资源列表  [上传] [新建文件夹] [批量操作 ▼] [🔍 搜索...] │   │
-│  ├─────────────────────────────────────────────────────┤   │
-│  │ 筛选: [全部资源 ▼] [私有 ▼] [最近7天 ▼] [重置]            │   │
-│  │ 快捷: [我的资源] [共享给我] [租户共享]                    │   │
-│  ├─────────────────────────────────────────────────────┤   │
-│  │ ☐ 文件名           类型  大小   时长  创建者  权限  操作  │   │
-│  ├─────────────────────────────────────────────────────┤   │
-│  │ ☐ 📊 项目会议.mp3   音频  5.2M  03:25  张三    🔒私有  ▶️ ⋮ │
-│  │ ☐ 📊 培训课程.wav   音频  12.8M 08:12  李四    🔓租户 ▶️ ⋮ │
-│  │ ☐ 📄 会议纪要.txt   文本  2.1K  -      王五    🔒私有  👁️ ⋮ │
-│  │ ☐ 📊 语音笔记.m4a   音频  3.5M  02:18  张三    🔗跨租 ▶️ ⋮ │
-│  │ ☐ 📄 项目计划.docx  文本  45K   -      赵六    🔓租户  👁️ ⋮ │
-│  ├─────────────────────────────────────────────────────┤   │
-│  │ [<<] 1 2 3 4 5 ... 20 [>>]  共156条                   │   │
-│  └─────────────────────────────────────────────────────┘   │
-│                                                             │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │ 📊 资源统计                                           │   │
-│  │ 音频: 128个 (12.5GB)  文本: 28个 (45.2MB)             │   │
-│  │ 今日上传: 15个        处理中任务: 3个                  │   │
-│  └─────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────┘
+#### 4.2 租户配额扩展
+
+```sql
+ALTER TABLE sys_tenant ADD COLUMN voice_model_quota INT DEFAULT 5 COMMENT '声音模型数量配额';
+ALTER TABLE sys_tenant ADD COLUMN voice_model_used INT DEFAULT 0 COMMENT '已用模型数量';
+ALTER TABLE sys_tenant ADD COLUMN project_quota INT DEFAULT 50 COMMENT '项目数量配额';
+ALTER TABLE sys_tenant ADD COLUMN project_used INT DEFAULT 0 COMMENT '已用项目数量';
+ALTER TABLE sys_tenant ADD COLUMN clone_quota INT DEFAULT 1000 COMMENT '月克隆次数配额';
+ALTER TABLE sys_tenant ADD COLUMN clone_used INT DEFAULT 0 COMMENT '本月已用克隆次数';
+ALTER TABLE sys_tenant ADD COLUMN merge_quota INT DEFAULT 500 COMMENT '月合并次数配额';
+ALTER TABLE sys_tenant ADD COLUMN merge_used INT DEFAULT 0 COMMENT '本月已用合并次数';
 ```
 
-## 5.2 音频详情/处理界面
+### 五、部署与运维
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│  ← 返回列表  [项目会议.mp3]                                   │
-├─────────────────────────────────────────────────────────────┤
-│  ┌───────────────────────────────────────────────────────┐ │
-│  │  ▶️ [播放/暂停]  00:00 / 03:25  ┌───────┬───────┐     │ │
-│  │  ├──────────────────────────────┤ 波形图 │       │     │ │
-│  │  │ ▁▂▃▄▅▆▇█▇▆▅▄▃▂▁▂▃▄▅▆▇█▇▆▅▄▃▂▁ │       │       │     │ │
-│  │  └──────────────────────────────┴───────┴───────┘     │ │
-│  └───────────────────────────────────────────────────────┘ │
-│                                                             │
-│  ┌─────────────┬─────────────────────────────────────────┐ │
-│  │ [基本信息]  │ 文件名: 项目会议.mp3                       │ │
-│  │ [处理工具]  │ 创建者: 张三 (科技公司)                    │ │
-│  │ [权限设置]  │ 创建时间: 2026-02-28 10:30                │ │
-│  │ [共享管理]  │ 文件大小: 5.2 MB                          │ │
-│  │ [分析结果]  │ 音频时长: 03:25                           │ │
-│  │             │ 采样率: 44.1kHz 声道: 双声道              │ │
-│  │             │ 格式: MP3 比特率: 192kbps                 │ │
-│  └─────────────┴─────────────────────────────────────────┘ │
-│                                                             │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │ [处理工具]                                            │   │
-│  │ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐       │   │
-│  │ │语音转文字│ │文字转语音│ │格式转换 │ │音频裁剪 │       │   │
-│  │ └────────┘ └────────┘ └────────┘ └────────┘       │   │
-│  │ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐       │   │
-│  │ │音量调整 │ │降噪处理 │ │频谱分析 │ │VAD检测  │       │   │
-│  │ └────────┘ └────────┘ └────────┘ └────────┘       │   │
-│  └─────────────────────────────────────────────────────┘   │
-│                                                             │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │ [语音转文字结果]   [导出] [复制]                     │   │
-│  │ 今天天气真好，我们一起去公园玩吧。                      │   │
-│  │                                                       │   │
-│  │ 00:00 - 00:02  今天天气真好                           │   │
-│  │ 00:02 - 00:04  我们一起去公园玩吧                      │   │
-│  └─────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────┘
-```
-
-## 5.3 权限配置弹窗
-
-```
-┌─────────────────────────────────────────────┐
-│ 权限配置 - 项目会议.mp3                       │
-├─────────────────────────────────────────────┤
-│ 基础权限:                                    │
-│ ◎ 私有 (仅自己可见)                          │
-│ ○ 租户内共享 (同租户用户可见)                 │
-│ ○ 跨租户共享 (指定租户/用户可见)              │
-│                                             │
-│ [跨租户共享配置]                              │
-│ ┌───────────────────────────────────────┐ │
-│ │ 添加授权: 租户ID [______] 用户ID(可选) │ │
-│ │ 权限: [可预览 ▼] 有效期: [7天 ▼] [添加]│ │
-│ └───────────────────────────────────────┘ │
-│                                             │
-│ 已授权列表:                                  │
-│ ┌───────────────────────────────────────┐ │
-│ │ 租户: 教育机构 (所有用户) - 可预览 永久  [删除]│
-│ │ 用户: 李四 (教育机构)    - 可下载 7天   [删除]│
-│ └───────────────────────────────────────┘ │
-│                                             │
-│ 租户内操作权限:                               │
-│ ☑ 可预览  ☑ 可下载  ☐ 可编辑  ☐ 可共享        │
-│                                             │
-│ [保存] [取消]                               │
-└─────────────────────────────────────────────┘
-```
-
----
-
-# 六、部署与运维
-
-## 6.1 服务部署架构
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                       负载均衡层                              │
-│                    Nginx/OpenResty                           │
-│                (路由/限流/SSL/静态资源)                       │
-└─────────────────────────────────────────────────────────────┘
-                              │
-        ┌─────────────────────┼─────────────────────┐
-        ▼                     ▼                     ▼
-┌─────────────────┐   ┌─────────────────┐   ┌─────────────────┐
-│   Web服务集群    │   │   Web服务集群    │   │   Web服务集群    │
-│ voicetext-Admin节点1│   │ voicetext-Admin节点2│   │ voicetext-Admin节点3│
-│  (无状态)       │   │  (无状态)       │   │  (无状态)       │
-└─────────────────┘   └─────────────────┘   └─────────────────┘
-        │                      │                      │
-        └──────────────────────┼──────────────────────┘
-                               │
-        ┌──────────────────────┼──────────────────────┐
-        ▼                      ▼                      ▼
-┌─────────────────┐   ┌─────────────────┐   ┌─────────────────┐
-│    Redis集群    │   │   MySQL集群     │   │   SnailJob      │
-│  (缓存/分布式锁) │   │ (主从/分库分表)  │   │  (任务调度中心)  │
-└─────────────────┘   └─────────────────┘   └─────────────────┘
-        │                      │                      │
-        └──────────────────────┼──────────────────────┘
-                               │
-        ┌──────────────────────┼──────────────────────┐
-        ▼                      ▼                      ▼
-┌─────────────────┐   ┌─────────────────┐   ┌─────────────────┐
-│    Minio集群    │   │   Neo4j图库     │   │   AI服务集群    │
-│  (对象存储)     │   │  (知识图谱)     │   │ (Whisper/TTS)   │
-└─────────────────┘   └─────────────────┘   └─────────────────┘
-```
-
-## 6.2 Docker Compose 配置（扩展）
+#### 5.1 新增服务部署
 
 ```yaml
-version: '3.8'
-
 services:
-  # MySQL - 使用原框架配置
-  mysql:
-    image: mysql:8.0
-    # ... 原有配置保持不变
-
-  # Redis - 使用原框架配置
-  redis:
-    image: redis:7.2
-    # ... 原有配置保持不变
-
-  # Minio - 使用原框架配置
-  minio:
-    image: minio/minio:latest
-    # ... 原有配置保持不变
-
-  # 新增：Whisper 语音识别服务
-  whisper-service:
-    image: onerahmet/openai-whisper-asr-webservice:latest
-    container_name: whisper-service
+  ai-gateway:
+    image: ai-gateway:latest
+    container_name: ai-gateway
     ports:
-      - "9000:9000"
+      - "9001:9001"
     environment:
-      - ASR_MODEL=base
-      - ASR_ENGINE=openai_whisper
-    volumes:
-      - ./data/whisper/models:/root/.cache/whisper
-      - ./data/whisper/uploads:/app/uploads
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
+      - WHISPER_SERVICE_URL=http://whisper:9002
+      - COQUI_SERVICE_URL=http://coqui:9003
+      - VOICE_CLONE_URL=http://voice-clone:9004
     restart: always
     networks:
       - voicetext-network
 
-  # 新增：Coqui TTS 服务
-  tts-service:
-    build:
-      context: ./docker/tts
-      dockerfile: Dockerfile
-    container_name: tts-service
+  voice-clone-service:
+    image: voice-clone-service:latest
+    container_name: voice-clone
     ports:
-      - "9001:9001"
+      - "9004:9004"
     volumes:
-      - ./data/tts/models:/app/models
-      - ./data/tts/outputs:/app/outputs
+      - ./data/voice-clone/models:/app/models
     environment:
-      - TTS_MODEL=tts_models/zh-CN/baker/tacotron2-DDC-GST
       - CUDA_VISIBLE_DEVICES=0
     deploy:
       resources:
@@ -1062,152 +916,111 @@ services:
     restart: always
     networks:
       - voicetext-network
-
-  # 新增：音频处理 Worker (处理FFmpeg/TarsosDSP任务)
-  audio-worker:
-    image: voicetext-audio-worker:latest
-    build:
-      context: ./voicetext-modules/voicetext-audio-worker
-      dockerfile: Dockerfile
-    container_name: audio-worker
-    environment:
-      - SPRING_PROFILES_ACTIVE=prod
-      - REDIS_HOST=redis
-      - MYSQL_HOST=mysql
-    volumes:
-      - ./data/audio/uploads:/data/uploads
-      - ./data/audio/outputs:/data/outputs
-    depends_on:
-      - mysql
-      - redis
-      - whisper-service
-      - tts-service
-    restart: always
-    networks:
-      - voicetext-network
-
-  # voicetext-Admin 服务（扩展环境变量）
-  voicetext-admin:
-    image: voicetext-admin:latest
-    build:
-      context: ./voicetext-admin
-      dockerfile: Dockerfile
-    environment:
-      - SPRING_PROFILES_ACTIVE=prod
-      - WHISPER_SERVICE_URL=http://whisper-service:9000
-      - TTS_SERVICE_URL=http://tts-service:9001
-      - MINIO_ENDPOINT=http://minio:9000
-    # ... 其他配置保持不变
 ```
 
-## 6.3 监控指标扩展
+#### 5.2 新增监控指标
 
-在原有SpringBoot-Admin基础上，增加音频处理监控：
+| 监控指标 | 说明 | 告警阈值 |
+|---------|------|----------|
+| voice.train.pending.count | 待训练任务数 | >5 |
+| voice.train.gpu.utilization | GPU使用率 | >90% 持续10分钟 |
+| voice.clone.qps | 克隆服务QPS | >20 |
+| project.merge.duration | 合并任务平均耗时 | >60秒 |
+| resource.ref.count.high | 高引用资源数 | >100 |
 
-| 监控指标                        | 说明           | 告警阈值 | 采集方式       |
-| --------------------------- | ------------ | ---- | ---------- |
-| audio.task.pending.count    | 待处理任务数       | >100 | Prometheus |
-| audio.task.processing.count | 处理中任务数       | >50  | Prometheus |
-| audio.task.failed.count     | 失败任务数(小时)    | >10  | 日志分析       |
-| audio.task.avg.duration     | 任务平均耗时       | >30秒 | Prometheus |
-| whisper.service.qps         | Whisper服务QPS | >10  | Nginx日志    |
-| tts.service.qps             | TTS服务QPS     | >20  | Nginx日志    |
-| audio.storage.usage         | 租户存储使用率      | >90% | 数据库查询      |
-| audio.quota.usage           | 租户配额使用率      | >80% | 数据库查询      |
+### 六、实施计划
 
----
-
-# 七、项目落地实施计划
-
-## 7.1 分阶段实施路线图
+#### 6.1 分阶段实施
 
 ```
-阶段一：基础架构搭建 (2周)
-├── 创建 voicetext-common-audio 模块
-├── 集成 TarsosDSP 基础音频处理
-├── 集成 FFmpeg 格式转换
-├── 扩展数据库表(资源表/共享表)
-└── 基础资源管理CRUD
+阶段一：基础架构 (3周)
+├── 创建声音模型表、项目表、版本表
+├── 基础项目管理CRUD
+├── 资源引用计数实现
+├── 基础权限校验
+└── 音频合并核心功能
 
-阶段二：租户资源池 (2周)
-├── 扩展租户配额管理
-├── 资源权限控制引擎
-├── 资源共享机制
-├── 资源列表/上传/下载
-└── 租户目录隔离
+阶段二：声音训练 (3周)
+├── AI网关设计与实现
+├── 集成声音克隆服务
+├── 训练任务管理
+├── 模型质量评估(MOS分)
+└── 训练进度实时反馈
 
-阶段三：音频处理能力 (3周)
-├── Whisper 服务集成
-├── TTS 服务集成
-├── 异步任务框架(SnailJob)
-├── 音频波形/频谱分析
-├── 语音活动检测
-└── 处理结果持久化
+阶段三：项目增强 (3周)
+├── 音频截取编辑功能
+├── 跨租户资源引用
+├── 预览波形生成(缓存策略)
+├── 操作撤销/重做功能
+├── 项目版本管理
+└── 项目回收站与恢复
 
-阶段四：前端UI完善 (2周)
-├── 资源池管理界面
-├── 音频播放/可视化组件
-├── 权限配置界面
-├── 处理任务管理界面
-└── 租户管理扩展
+阶段四：前端完善 (2周)
+├── 项目编辑界面
+├── 声音训练界面
+├── 音频波形可视化
+├── 拖拽排序功能
+└── 实时进度展示
 
-阶段五：性能优化与测试 (2周)
-├── 分片上传/断点续传
-├── 缓存优化
-├── 并发压力测试
-├── 安全审计
-└── 文档完善
+阶段五：性能优化 (2周)
+├── 流式处理改造
+├── 并发训练队列
+├── 优先级任务调度
+├── 资源配额校验
+└── 压力测试
 
-阶段六：生产部署 (1周)
-├── Docker编排
-├── 监控配置
-├── 备份策略
-└── 灰度发布
+阶段六：上线运维 (2周)
+├── 服务编排部署
+├── GPU资源监控
+├── 灰度发布策略
+├── 备份恢复策略
+└── 渗透测试
 ```
 
-## 7.2 关键风险与应对
+#### 6.2 风险评估与应对
 
-| 风险类型     | 风险描述                | 影响程度 | 应对措施                             |
-| -------- | ------------------- | ---- | -------------------------------- |
-| **技术风险** | Whisper/TTS GPU资源不足 | 高    | 1. 任务队列削峰 2. 支持模型降级 3. 预留GPU弹性扩容 |
-|          | 音频处理性能瓶颈            | 中    | 1. 分片处理 2. 结果缓存 3. 异步非阻塞         |
-|          | 大文件内存溢出             | 中    | 1. 流式处理 2. 分片上传 3. 限制单文件大小       |
-| **业务风险** | 租户隔离穿透              | 高    | 1. 全链路权限校验 2. 路径注入防护 3. 定期安全审计   |
-|          | 资源滥用/盗用             | 中    | 1. 接口限流 2. 访问日志 3. 异常行为检测        |
-| **运维风险** | 模型服务宕机              | 中    | 1. 多副本部署 2. 自动重启 3. 降级服务         |
-|          | 数据丢失                | 高    | 1. 每日备份 2. 多副本存储 3. 操作日志         |
+| 风险 | 影响 | 应对措施 |
+|------|------|----------|
+| 声音克隆质量不佳 | 中 | 提供音频质量检测、训练指南、质量评分 |
+| GPU资源竞争 | 高 | 任务队列、优先级调度、弹性扩容 |
+| 合并音频时长过长 | 中 | 流式处理、进度提示、异步合并 |
+| 跨租户权限漏洞 | 高 | 全链路校验、操作审计、访问日志 |
+| 模型文件泄露 | 高 | 模型加密存储、访问控制、水印技术 |
+
+### 七、总结
+
+#### 7.1 优化点汇总
+
+| 优化项 | 原方案 | 优化后 |
+|--------|--------|--------|
+| AI服务集成 | 直接集成 | AI网关解耦 |
+| 资源引用 | 无引用计数 | 有引用计数保护 |
+| 操作体验 | 无撤销功能 | 支持撤销/重做 |
+| 版本管理 | 无版本 | 支持版本回溯 |
+| 质量评估 | 无评分 | MOS分+相似度评分 |
+| 访问审计 | 无日志 | 完整访问日志 |
+| 任务调度 | 无优先级 | 优先级队列 |
+| 波形生成 | 实时生成 | 多级缓存 |
+
+#### 7.2 核心优势
+
+- **完整闭环**：从声音训练到项目合成，形成完整音频生产链路
+- **灵活协作**：支持自有资源和共享资源混编，打破租户壁垒
+- **安全可控**：细粒度权限 + 配额管理 + 操作审计 + 引用保护
+- **用户体验**：可视化编辑 + 撤销重做 + 实时反馈 + 版本管理
+
+#### 7.3 后续规划
+
+- **AI智能剪辑**：根据内容自动推荐剪辑点
+- **批量项目处理**：模板化项目批量生成
+- **声纹识别集成**：自动识别说话人并分离音轨
+- **云端协作**：多人实时协作编辑项目
+- **效果增强**：AI降噪、音质修复、情感迁移
 
 ---
+**核心数据实体**: sys_tenant(扩展配额) / tenant_resource / resource_share / voice_model / audio_project / project_audio_detail / audio_process_task
 
-# 八、总结
-
-## 8.1 融合改造成果
-
-本项目基于 **voicetext-Vue-Plus** 框架，成功整合了多租户音频处理能力，实现了：
-
-1. **架构融合**：充分利用原框架的多租户、权限、任务调度、OSS存储等能力，新增音频处理模块无缝集成
-2. **租户隔离**：物理文件隔离 + 数据库租户ID过滤 + 全链路权限校验，三层保障数据安全
-3. **资源共享**：支持私有/租户内/跨租户三级权限，灵活满足协作需求
-4. **音频能力**：集成Whisper语音识别、TTS语音合成、TarsosDSP音频分析，形成完整音频处理链路
-5. **用户体验**：Element Plus界面 + 音频可视化 + 实时处理状态，操作流畅直观
-
-## 8.2 核心优势
-
-- **开箱即用**：基于成熟框架扩展，避免重复造轮子
-- **性能稳定**：分布式架构支持水平扩展，异步任务削峰填谷
-- **安全可靠**：多租户隔离 + 细粒度权限 + 操作审计
-- **易于维护**：模块化设计，各模块职责单一，便于扩展
-
-## 8.3 后续规划
-
-- **AI增强**：接入大模型，实现音频内容摘要、智能问答
-- **实时通信**：WebRTC实时语音处理
-- **更多格式**：支持视频中音频提取处理
-- **声纹识别**：说话人识别与分离
-- **国际多语言**：支持更多语言的语音识别与合成
-
----
-
-**文档版本**: 1.0.0  
-**最后更新**: 2026-02-28  
+**后续规划**: AI智能剪辑 · 批量项目模板 · 声纹识别分离 · 云端实时协作 · 情感迁移合成
+**文档版本**: 2.1.0  
+**最后更新**: 2026-03-04  
 **文档状态**: 已评审待实施
