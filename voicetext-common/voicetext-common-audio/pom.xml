@@ -31,16 +31,16 @@
 
 
         <!-- TarsosDSP 核心库 -->
-        <dependency>
-            <groupId>be.tarsos.dsp</groupId>
-            <artifactId>core</artifactId>
-            <version>2.5</version>
-        </dependency>
-        <dependency>
-            <groupId>be.tarsos.dsp</groupId>
-            <artifactId>jvm</artifactId>
-            <version>2.5</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>be.tarsos.dsp</groupId>-->
+<!--            <artifactId>core</artifactId>-->
+<!--            <version>2.5</version>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>be.tarsos.dsp</groupId>-->
+<!--            <artifactId>jvm</artifactId>-->
+<!--            <version>2.5</version>-->
+<!--        </dependency>-->
 
         <!-- JavaCPP FFmpeg 封装 -->
         <dependency>
@@ -50,23 +50,23 @@
         </dependency>
 
 
-        <dependency>
-            <groupId>org.bytedeco</groupId>
-            <artifactId>javacpp</artifactId>
-            <version>1.5.9</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.bytedeco</groupId>-->
+<!--            <artifactId>javacpp</artifactId>-->
+<!--            <version>1.5.9</version>-->
+<!--        </dependency>-->
 
         <!-- Java 音频处理 -->
-        <dependency>
-            <groupId>javazoom</groupId>
-            <artifactId>jlayer</artifactId>
-            <version>1.0.1</version>
-        </dependency>
-        <dependency>
-            <groupId>com.googlecode.soundlibs</groupId>
-            <artifactId>mp3spi</artifactId>
-            <version>1.9.5.4</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>javazoom</groupId>-->
+<!--            <artifactId>jlayer</artifactId>-->
+<!--            <version>1.0.1</version>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>com.googlecode.soundlibs</groupId>-->
+<!--            <artifactId>mp3spi</artifactId>-->
+<!--            <version>1.9.5.4</version>-->
+<!--        </dependency>-->
 
         <!-- 音频特征提取 -->
         <dependency>
@@ -75,70 +75,70 @@
             <version>1.3</version>
         </dependency>
 
-        <!-- Spring AI OpenAI Starter -->
-        <dependency>
-            <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
-            <version>1.0.2</version>
-        </dependency>
+<!--        &lt;!&ndash; Spring AI OpenAI Starter &ndash;&gt;-->
+<!--        <dependency>-->
+<!--            <groupId>org.springframework.ai</groupId>-->
+<!--            <artifactId>spring-ai-openai-spring-boot-starter</artifactId>-->
+<!--            <version>1.0.2</version>-->
+<!--        </dependency>-->
 
-        <!-- LangChain4j 核心 Spring Boot Starter -->
-        <dependency>
-            <groupId>dev.langchain4j</groupId>
-            <artifactId>langchain4j-spring-boot-starter</artifactId>
-            <version>1.3.0</version>
-        </dependency>
+<!--        &lt;!&ndash; LangChain4j 核心 Spring Boot Starter &ndash;&gt;-->
+<!--        <dependency>-->
+<!--            <groupId>dev.langchain4j</groupId>-->
+<!--            <artifactId>langchain4j-spring-boot-starter</artifactId>-->
+<!--            <version>1.3.0</version>-->
+<!--        </dependency>-->
 
-        <!-- LangChain4j OpenAI Spring Boot Starter (兼容 DeepSeek 等) -->
-        <dependency>
-            <groupId>dev.langchain4j</groupId>
-            <artifactId>langchain4j-open-ai-spring-boot-starter</artifactId>
-            <version>1.3.0</version>
-        </dependency>
+<!--        &lt;!&ndash; LangChain4j OpenAI Spring Boot Starter (兼容 DeepSeek 等) &ndash;&gt;-->
+<!--        <dependency>-->
+<!--            <groupId>dev.langchain4j</groupId>-->
+<!--            <artifactId>langchain4j-open-ai-spring-boot-starter</artifactId>-->
+<!--            <version>1.3.0</version>-->
+<!--        </dependency>-->
 
-        <!-- Neo4j Driver -->
-        <dependency>
-            <groupId>org.neo4j.driver</groupId>
-            <artifactId>neo4j-java-driver</artifactId>
-            <version>5.26.0</version>
-        </dependency>
+<!--        &lt;!&ndash; Neo4j Driver &ndash;&gt;-->
+<!--        <dependency>-->
+<!--            <groupId>org.neo4j.driver</groupId>-->
+<!--            <artifactId>neo4j-java-driver</artifactId>-->
+<!--            <version>5.26.0</version>-->
+<!--        </dependency>-->
 
-        <!-- Neo4j Cypher DSL -->
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-cypher-dsl</artifactId>
-            <version>2024.1.0</version>
-        </dependency>
+<!--        &lt;!&ndash; Neo4j Cypher DSL &ndash;&gt;-->
+<!--        <dependency>-->
+<!--            <groupId>org.neo4j</groupId>-->
+<!--            <artifactId>neo4j-cypher-dsl</artifactId>-->
+<!--            <version>2024.1.0</version>-->
+<!--        </dependency>-->
 
-        <!-- Langchain4j Neo4j 扩展 -->
-        <dependency>
-            <groupId>dev.langchain4j</groupId>
-            <artifactId>langchain4j-community-neo4j</artifactId>
-            <version>1.2.0-beta8</version>
-        </dependency>
+<!--        &lt;!&ndash; Langchain4j Neo4j 扩展 &ndash;&gt;-->
+<!--        <dependency>-->
+<!--            <groupId>dev.langchain4j</groupId>-->
+<!--            <artifactId>langchain4j-community-neo4j</artifactId>-->
+<!--            <version>1.2.0-beta8</version>-->
+<!--        </dependency>-->
 
-        <!-- 语音识别HTTP客户端 -->
-        <dependency>
-            <groupId>com.squareup.okhttp3</groupId>
-            <artifactId>okhttp</artifactId>
-            <version>4.12.0</version>
-        </dependency>
+<!--        &lt;!&ndash; 语音识别HTTP客户端 &ndash;&gt;-->
+<!--        <dependency>-->
+<!--            <groupId>com.squareup.okhttp3</groupId>-->
+<!--            <artifactId>okhttp</artifactId>-->
+<!--            <version>4.12.0</version>-->
+<!--        </dependency>-->
 
-        <!-- Jackson for JSON -->
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-        </dependency>
+<!--        &lt;!&ndash; Jackson for JSON &ndash;&gt;-->
+<!--        <dependency>-->
+<!--            <groupId>com.fasterxml.jackson.core</groupId>-->
+<!--            <artifactId>jackson-databind</artifactId>-->
+<!--        </dependency>-->
 
-        <!-- Logging -->
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.angus</groupId>
-            <artifactId>jakarta.mail</artifactId>
-        </dependency>
+<!--        &lt;!&ndash; Logging &ndash;&gt;-->
+<!--        <dependency>-->
+<!--            <groupId>org.slf4j</groupId>-->
+<!--            <artifactId>slf4j-api</artifactId>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>org.eclipse.angus</groupId>-->
+<!--            <artifactId>jakarta.mail</artifactId>-->
+<!--        </dependency>-->
     </dependencies>
 
 

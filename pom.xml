@@ -498,41 +498,30 @@
         </resources>
     </build>
 
-    <repositories>
-        <repository>
-            <id>spring-milestones</id>
-            <name>Spring Milestones</name>
-            <url>https://repo.spring.io/milestone</url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-        <!-- TarsosDSP 专属仓库 -->
-        <repository>
-            <id>be.0110.repo-releases</id>
-            <name>0110.be repository</name>
-            <url>https://mvn.0110.be/#/releases</url>
-        </repository>
-        <repository>
-            <id>public</id>
-            <name>huawei nexus</name>
-            <url>https://mirrors.huaweicloud.com/repository/maven/</url>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-        </repository>
-        <repository>
-            <id>central</id>
-            <url>https://repo.maven.apache.org/maven2</url>
-        </repository>
-        <repository>
-            <id>github</id>
-            <url>https://maven.pkg.github.com/OWNER/REPOSITORY</url>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
+<!--    <repositories>-->
+<!--        <repository>-->
+<!--            <id>spring-milestones</id>-->
+<!--            <name>Spring Milestones</name>-->
+<!--            <url>https://repo.spring.io/milestone</url>-->
+<!--            <snapshots>-->
+<!--                <enabled>false</enabled>-->
+<!--            </snapshots>-->
+<!--        </repository>-->
+<!--        &lt;!&ndash; TarsosDSP 专属仓库 &ndash;&gt;-->
+<!--        <repository>-->
+<!--            <id>be.0110.repo-releases</id>-->
+<!--            <name>0110.be repository</name>-->
+<!--            <url>https://mvn.0110.be/#/releases</url>-->
+<!--        </repository>-->
+<!--        <repository>-->
+<!--            <id>public</id>-->
+<!--            <name>huawei nexus</name>-->
+<!--            <url>https://mirrors.huaweicloud.com/repository/maven/</url>-->
+<!--            <releases>-->
+<!--                <enabled>true</enabled>-->
+<!--            </releases>-->
+<!--        </repository>-->
+<!--    </repositories>-->
 
     <pluginRepositories>
         <pluginRepository>

@@ -1,4 +1,4 @@
-package org.dromara.common.audio.dsp;
+package org.dromara.audio.dsp;
 
 import lombok.Data;
 
