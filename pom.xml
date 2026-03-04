@@ -38,53 +38,46 @@
         <lombok.version>1.18.42</lombok.version>
         <bouncycastle.version>1.80</bouncycastle.version>
         <justauth.version>1.16.7</justauth.version>
-        <!-- 离线IP地址定位库 -->
         <ip2region.version>3.3.2</ip2region.version>
-        <!-- OSS 配置 -->
         <aws.sdk.version>2.28.22</aws.sdk.version>
-        <!-- SMS 配置 -->
         <sms4j.version>3.3.5</sms4j.version>
-        <!-- 限制框架中的fastjson版本 -->
         <fastjson.version>1.2.83</fastjson.version>
-        <!-- 面向运行时的D-ORM依赖 -->
         <anyline.version>8.7.3-20251210</anyline.version>
-        <!-- 工作流配置 -->
         <warm-flow.version>1.8.4</warm-flow.version>
-        <!-- Neo4j 相关版本 -->
         <neo4j-driver.version>5.26.0</neo4j-driver.version>
         <neo4j-cypher-dsl.version>2024.1.0</neo4j-cypher-dsl.version>
         <langchain4j-neo4j.version>1.2.0-beta8</langchain4j-neo4j.version>
 
-        <!-- 音频处理库 -->
-        <ffmpeg.version>6.1.0-1.5.9</ffmpeg.version>
+        <!-- ========= 音频处理库版本定义 ========= -->
+        <!-- TarsosDSP 音频分析核心 -->
+        <tarsos.dsp.version>2.5</tarsos.dsp.version>
+        <!-- FFmpeg 封装 -->
+        <ffmpeg.version>6.0-1.5.9</ffmpeg.version>
         <javacpp.version>1.5.9</javacpp.version>
-        <e.tarsos.dsp.vsersion>2.5</e.tarsos.dsp.vsersion>
-
         <!-- 语音识别与合成 -->
         <whisper.cpp.version>1.5.5</whisper.cpp.version>
         <coqui-tts.version>0.13.3</coqui-tts.version>
-
         <!-- 音频可视化 -->
         <jlayer.version>1.0.1</jlayer.version>
         <javazoom.version>1.1.2</javazoom.version>
+        <!-- 音频处理工具 -->
+        <commons-io.version>2.15.1</commons-io.version>
+        <okhttp.version>4.12.0</okhttp.version>
+        <mp3spi.version>1.9.5.4</mp3spi.version>
+        <jaudiotagger.version>2.3.0</jaudiotagger.version>
+        <basicplayer.version>3.0.0.0</basicplayer.version>
 
-        <!-- 统一管理版本号 -->
-        <!-- Spring AI 使用最新的里程碑版 (如果你想用最新功能) -->
-<!--        <spring-ai.version>1.1.2</spring-ai.version>-->
-        <!-- 如果你追求极致的稳定，可以保持 1.0.2 -->
-         <spring-ai.version>1.0.2</spring-ai.version>
-
-        <!-- LangChain4j 使用最新的稳定版 -->
+        <!-- Spring AI 版本 -->
+        <spring-ai.version>1.0.2</spring-ai.version>
+        <!-- LangChain4j 版本 -->
         <langchain4j.version>1.3.0</langchain4j.version>
-        <ffmpeg.version>6.1.0-1.5.9</ffmpeg.version>
-        <javacpp.version>1.5.9</javacpp.version>
+
         <!-- 插件版本 -->
         <maven-jar-plugin.version>3.4.2</maven-jar-plugin.version>
         <maven-war-plugin.version>3.4.0</maven-war-plugin.version>
         <maven-compiler-plugin.version>3.14.0</maven-compiler-plugin.version>
         <maven-surefire-plugin.version>3.5.3</maven-surefire-plugin.version>
         <flatten-maven-plugin.version>1.3.0</flatten-maven-plugin.version>
-        <!-- 打包默认跳过测试 -->
         <skipTests>true</skipTests>
     </properties>
 
@@ -92,7 +85,6 @@
         <profile>
             <id>local</id>
             <properties>
-                <!-- 环境标识，需要与配置文件的名称相对应 -->
                 <profiles.active>local</profiles.active>
                 <logging.level>info</logging.level>
                 <monitor.username>ruoyi</monitor.username>
@@ -102,14 +94,12 @@
         <profile>
             <id>dev</id>
             <properties>
-                <!-- 环境标识，需要与配置文件的名称相对应 -->
                 <profiles.active>dev</profiles.active>
                 <logging.level>info</logging.level>
                 <monitor.username>ruoyi</monitor.username>
                 <monitor.password>123456</monitor.password>
             </properties>
             <activation>
-                <!-- 默认环境 -->
                 <activeByDefault>true</activeByDefault>
             </activation>
         </profile>
@@ -127,8 +117,7 @@
     <!-- 依赖声明 -->
     <dependencyManagement>
         <dependencies>
-
-            <!-- SpringBoot的依赖配置-->
+            <!-- SpringBoot的依赖配置 -->
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-dependencies</artifactId>
@@ -137,7 +126,7 @@
                 <scope>import</scope>
             </dependency>
 
-            <!-- hutool 的依赖配置-->
+            <!-- hutool 的依赖配置 -->
             <dependency>
                 <groupId>cn.hutool</groupId>
                 <artifactId>hutool-bom</artifactId>
@@ -146,7 +135,7 @@
                 <scope>import</scope>
             </dependency>
 
-            <!-- common 的依赖配置-->
+            <!-- common 的依赖配置 -->
             <dependency>
                 <groupId>org.dromara</groupId>
                 <artifactId>voicetext-common-bom</artifactId>
@@ -155,44 +144,110 @@
                 <scope>import</scope>
             </dependency>
 
+            <!-- ========= 音频处理库依赖管理 ========= -->
+            <!-- TarsosDSP 核心库 -->
+            <dependency>
+                <groupId>be.tarsos.dsp</groupId>
+                <artifactId>core</artifactId>
+                <version>${tarsos.dsp.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>be.tarsos.dsp</groupId>
+                <artifactId>jvm</artifactId>
+                <version>${tarsos.dsp.version}</version>
+            </dependency>
+
+            <!-- JavaCPP FFmpeg 封装 -->
+            <dependency>
+                <groupId>org.bytedeco</groupId>
+                <artifactId>ffmpeg-platform</artifactId>
+                <version>${ffmpeg.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.bytedeco</groupId>
+                <artifactId>javacpp</artifactId>
+                <version>${javacpp.version}</version>
+            </dependency>
+
+            <!-- Java 音频处理 -->
+            <dependency>
+                <groupId>javazoom</groupId>
+                <artifactId>jlayer</artifactId>
+                <version>${jlayer.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.googlecode.soundlibs</groupId>
+                <artifactId>mp3spi</artifactId>
+                <version>${mp3spi.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.googlecode.soundlibs</groupId>
+                <artifactId>basicplayer</artifactId>
+                <version>${basicplayer.version}</version>
+            </dependency>
+
+            <!-- 音频元数据处理 -->
+            <dependency>
+                <groupId>org.jaudiotagger</groupId>
+                <artifactId>jaudiotagger</artifactId>
+                <version>${jaudiotagger.version}</version>
+            </dependency>
+
+            <!-- 工具类 -->
+            <dependency>
+                <groupId>commons-io</groupId>
+                <artifactId>commons-io</artifactId>
+                <version>${commons-io.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.squareup.okhttp3</groupId>
+                <artifactId>okhttp</artifactId>
+                <version>${okhttp.version}</version>
+            </dependency>
+
+            <!-- LangChain4j AI 能力 -->
+            <dependency>
+                <groupId>dev.langchain4j</groupId>
+                <artifactId>langchain4j-open-ai</artifactId>
+                <version>${langchain4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>dev.langchain4j</groupId>
+                <artifactId>langchain4j</artifactId>
+                <version>${langchain4j.version}</version>
+            </dependency>
+
+            <!-- 原有其他依赖保持不变 -->
             <dependency>
                 <groupId>org.springdoc</groupId>
                 <artifactId>springdoc-openapi-starter-webmvc-api</artifactId>
                 <version>${springdoc.version}</version>
             </dependency>
-
             <dependency>
                 <groupId>com.github.therapi</groupId>
                 <artifactId>therapi-runtime-javadoc</artifactId>
                 <version>${therapi-javadoc.version}</version>
             </dependency>
-
             <dependency>
                 <groupId>org.projectlombok</groupId>
                 <artifactId>lombok</artifactId>
                 <version>${lombok.version}</version>
             </dependency>
-
             <dependency>
                 <groupId>cn.idev.excel</groupId>
                 <artifactId>fastexcel</artifactId>
                 <version>${fastexcel.version}</version>
             </dependency>
-
-            <!-- velocity代码生成使用模板 -->
             <dependency>
                 <groupId>org.apache.velocity</groupId>
                 <artifactId>velocity-engine-core</artifactId>
                 <version>${velocity.version}</version>
             </dependency>
-
-            <!-- Sa-Token 权限认证, 在线文档：http://sa-token.dev33.cn/ -->
             <dependency>
                 <groupId>cn.dev33</groupId>
                 <artifactId>sa-token-spring-boot3-starter</artifactId>
                 <version>${satoken.version}</version>
             </dependency>
-            <!-- Sa-Token 整合 jwt -->
             <dependency>
                 <groupId>cn.dev33</groupId>
                 <artifactId>sa-token-jwt</artifactId>
@@ -209,70 +264,56 @@
                 <artifactId>sa-token-core</artifactId>
                 <version>${satoken.version}</version>
             </dependency>
-
-            <!-- dynamic-datasource 多数据源-->
             <dependency>
                 <groupId>com.baomidou</groupId>
                 <artifactId>dynamic-datasource-spring-boot3-starter</artifactId>
                 <version>${dynamic-ds.version}</version>
             </dependency>
-
             <dependency>
                 <groupId>org.mybatis</groupId>
                 <artifactId>mybatis</artifactId>
                 <version>${mybatis.version}</version>
             </dependency>
-
             <dependency>
                 <groupId>com.baomidou</groupId>
                 <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
                 <version>${mybatis-plus.version}</version>
             </dependency>
-
             <dependency>
                 <groupId>com.baomidou</groupId>
                 <artifactId>mybatis-plus-jsqlparser</artifactId>
                 <version>${mybatis-plus.version}</version>
             </dependency>
-
             <dependency>
                 <groupId>com.baomidou</groupId>
                 <artifactId>mybatis-plus-annotation</artifactId>
                 <version>${mybatis-plus.version}</version>
             </dependency>
-
-            <!-- sql性能分析插件 -->
             <dependency>
                 <groupId>p6spy</groupId>
                 <artifactId>p6spy</artifactId>
                 <version>${p6spy.version}</version>
             </dependency>
-
-            <!--  AWS SDK for Java 2.x  -->
             <dependency>
                 <groupId>software.amazon.awssdk</groupId>
                 <artifactId>s3</artifactId>
                 <version>${aws.sdk.version}</version>
             </dependency>
-            <!-- 客户端的性能增强传输管理器 -->
             <dependency>
                 <groupId>software.amazon.awssdk</groupId>
                 <artifactId>s3-transfer-manager</artifactId>
                 <version>${aws.sdk.version}</version>
             </dependency>
-            <!-- 适用于 Netty 的客户端 -->
             <dependency>
                 <groupId>software.amazon.awssdk</groupId>
                 <artifactId>netty-nio-client</artifactId>
                 <version>${aws.sdk.version}</version>
             </dependency>
-            <!--短信sms4j-->
             <dependency>
                 <groupId>org.dromara.sms4j</groupId>
                 <artifactId>sms4j-spring-boot-starter</artifactId>
                 <version>${sms4j.version}</version>
             </dependency>
-
             <dependency>
                 <groupId>de.codecentric</groupId>
                 <artifactId>spring-boot-admin-starter-server</artifactId>
@@ -283,21 +324,16 @@
                 <artifactId>spring-boot-admin-starter-client</artifactId>
                 <version>${spring-boot-admin.version}</version>
             </dependency>
-
-            <!--redisson-->
             <dependency>
                 <groupId>org.redisson</groupId>
                 <artifactId>redisson-spring-boot-starter</artifactId>
                 <version>${redisson.version}</version>
             </dependency>
-
             <dependency>
                 <groupId>com.baomidou</groupId>
                 <artifactId>lock4j-redisson-spring-boot-starter</artifactId>
                 <version>${lock4j.version}</version>
             </dependency>
-
-            <!-- SnailJob Client -->
             <dependency>
                 <groupId>com.aizuda</groupId>
                 <artifactId>snail-job-client-starter</artifactId>
@@ -308,21 +344,16 @@
                 <artifactId>snail-job-client-job-core</artifactId>
                 <version>${snailjob.version}</version>
             </dependency>
-
-            <!-- 加密包引入 -->
             <dependency>
                 <groupId>org.bouncycastle</groupId>
                 <artifactId>bcprov-jdk15to18</artifactId>
                 <version>${bouncycastle.version}</version>
             </dependency>
-
             <dependency>
                 <groupId>io.github.linpeilie</groupId>
                 <artifactId>mapstruct-plus-spring-boot-starter</artifactId>
                 <version>${mapstruct-plus.version}</version>
             </dependency>
-
-            <!-- Warm-Flow国产工作流引擎, 在线文档：http://warm-flow.cn/ -->
             <dependency>
                 <groupId>org.dromara.warm</groupId>
                 <artifactId>warm-flow-mybatis-plus-sb3-starter</artifactId>
@@ -333,58 +364,46 @@
                 <artifactId>warm-flow-plugin-ui-sb-web</artifactId>
                 <version>${warm-flow.version}</version>
             </dependency>
-
-            <!-- JustAuth 的依赖配置-->
             <dependency>
                 <groupId>me.zhyd.oauth</groupId>
                 <artifactId>JustAuth</artifactId>
                 <version>${justauth.version}</version>
             </dependency>
-
-            <!-- 离线IP地址定位库 ip2region -->
             <dependency>
                 <groupId>org.lionsoul</groupId>
                 <artifactId>ip2region</artifactId>
                 <version>${ip2region.version}</version>
             </dependency>
-
             <dependency>
                 <groupId>com.alibaba</groupId>
                 <artifactId>fastjson</artifactId>
                 <version>${fastjson.version}</version>
             </dependency>
-
             <dependency>
                 <groupId>org.dromara</groupId>
                 <artifactId>voicetext-system</artifactId>
                 <version>${revision}</version>
             </dependency>
-
             <dependency>
                 <groupId>org.dromara</groupId>
                 <artifactId>voicetext-job</artifactId>
                 <version>${revision}</version>
             </dependency>
-
             <dependency>
                 <groupId>org.dromara</groupId>
                 <artifactId>voicetext-generator</artifactId>
                 <version>${revision}</version>
             </dependency>
-
             <dependency>
                 <groupId>org.dromara</groupId>
                 <artifactId>voicetext-demo</artifactId>
                 <version>${revision}</version>
             </dependency>
-
-            <!--  工作流模块  -->
             <dependency>
                 <groupId>org.dromara</groupId>
                 <artifactId>voicetext-workflow</artifactId>
                 <version>${revision}</version>
             </dependency>
-
         </dependencies>
     </dependencyManagement>
 
@@ -438,20 +457,18 @@
                     </compilerArgs>
                 </configuration>
             </plugin>
-            <!-- 单元测试使用 -->
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${maven-surefire-plugin.version}</version>
                 <configuration>
                     <argLine>-Dfile.encoding=UTF-8</argLine>
-                    <!-- 根据打包环境执行对应的@Tag测试方法 -->
                     <groups>${profiles.active}</groups>
-                    <!-- 排除标签 -->
                     <excludedGroups>exclude</excludedGroups>
                 </configuration>
             </plugin>
-            <!-- 统一版本号管理 -->
+
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>flatten-maven-plugin</artifactId>
@@ -481,47 +498,35 @@
         <resources>
             <resource>
                 <directory>src/main/resources</directory>
-                <!-- 关闭过滤 -->
                 <filtering>false</filtering>
             </resource>
             <resource>
                 <directory>src/main/resources</directory>
-                <!-- 引入所有 匹配文件进行过滤 -->
                 <includes>
                     <include>application*</include>
                     <include>bootstrap*</include>
                     <include>banner*</include>
                 </includes>
-                <!-- 启用过滤 即该资源中的变量将会被过滤器中的值替换 -->
                 <filtering>true</filtering>
             </resource>
         </resources>
     </build>
 
-<!--    <repositories>-->
-<!--        <repository>-->
-<!--            <id>spring-milestones</id>-->
-<!--            <name>Spring Milestones</name>-->
-<!--            <url>https://repo.spring.io/milestone</url>-->
-<!--            <snapshots>-->
-<!--                <enabled>false</enabled>-->
-<!--            </snapshots>-->
-<!--        </repository>-->
-<!--        &lt;!&ndash; TarsosDSP 专属仓库 &ndash;&gt;-->
-<!--        <repository>-->
-<!--            <id>be.0110.repo-releases</id>-->
-<!--            <name>0110.be repository</name>-->
-<!--            <url>https://mvn.0110.be/#/releases</url>-->
-<!--        </repository>-->
-<!--        <repository>-->
-<!--            <id>public</id>-->
-<!--            <name>huawei nexus</name>-->
-<!--            <url>https://mirrors.huaweicloud.com/repository/maven/</url>-->
-<!--            <releases>-->
-<!--                <enabled>true</enabled>-->
-<!--            </releases>-->
-<!--        </repository>-->
-<!--    </repositories>-->
+    <repositories>
+        <repository>
+            <id>TarsosDSP-repository</id>
+            <name>0110.be repository</name>
+            <url>https://mvn.0110.be/releases</url>
+        </repository>
+        <repository>
+            <id>public</id>
+            <name>huawei nexus</name>
+            <url>https://mirrors.huaweicloud.com/repository/maven/</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+        </repository>
+    </repositories>
 
     <pluginRepositories>
         <pluginRepository>
@@ -538,5 +543,3 @@
     </pluginRepositories>
 
 </project>
-
-
