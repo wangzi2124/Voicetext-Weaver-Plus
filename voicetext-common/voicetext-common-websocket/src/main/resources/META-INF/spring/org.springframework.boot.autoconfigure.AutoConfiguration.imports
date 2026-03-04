@@ -1,1 +1,1 @@
-org.dromara.common.websocket.config.WebSocketConfig
+com.voicetext.common.websocket.config.WebSocketConfig

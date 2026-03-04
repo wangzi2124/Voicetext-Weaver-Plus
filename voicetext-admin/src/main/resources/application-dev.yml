@@ -164,7 +164,7 @@ sms:
   minute-max: 1
   # 短信拦截限制单手机号每日最大发送量，只对开启了拦截的配置有效
   account-max: 30
-  # 以下配置来自于 org.dromara.sms4j.provider.config.BaseConfig类中
+  # 以下配置来自于 com.voicetext.sms4j.provider.config.BaseConfig类中
   blends:
     # 唯一ID 用于发送短信寻找具体配置 随便定义别用中文即可
     # 可以同时存在两个相同厂商 例如: ali1 ali2 两个不同的阿里短信账号 也可用于区分租户

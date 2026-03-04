@@ -5,15 +5,15 @@ FROM bellsoft/liberica-openjdk-rocky:17.0.16-cds
 
 LABEL maintainer="Lion Li"
 
-RUN mkdir -p /ruoyi/monitor/logs
+RUN mkdir -p /voicetext/monitor/logs
 
-WORKDIR /ruoyi/monitor
+WORKDIR /voicetext/monitor
 
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8 JAVA_OPTS=""
 
 EXPOSE 9090
 
-ADD ./target/ruoyi-monitor-admin.jar ./app.jar
+ADD ./target/voicetext-monitor-admin.jar ./app.jar
 
 SHELL ["/bin/bash", "-c"]
 

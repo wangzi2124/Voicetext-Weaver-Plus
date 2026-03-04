@@ -6,9 +6,9 @@ package ${packageName}.domain;
 #end
 #end
 #if($IsTenant==1)
-import org.dromara.common.tenant.core.TenantEntity;
+import core.com.voicetext.common.tenant.TenantEntity;
 #else
-import org.dromara.common.mybatis.core.domain.BaseEntity;
+import domain.core.com.voicetext.common.mybatis.BaseEntity;
 #end
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;

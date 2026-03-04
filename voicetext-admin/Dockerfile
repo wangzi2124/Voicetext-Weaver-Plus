@@ -5,11 +5,11 @@ FROM bellsoft/liberica-openjdk-rocky:17.0.16-cds
 
 LABEL maintainer="Lion Li"
 
-RUN mkdir -p /ruoyi/server/logs \
-    /ruoyi/server/temp \
-    /ruoyi/skywalking/agent
+RUN mkdir -p /voicetext/server/logs \
+    /voicetext/server/temp \
+    /voicetext/skywalking/agent
 
-WORKDIR /ruoyi/server
+WORKDIR /voicetext/server
 
 ENV SERVER_PORT=8080 SNAIL_PORT=28080 LANG=C.UTF-8 LC_ALL=C.UTF-8 JAVA_OPTS=""
 
@@ -17,15 +17,15 @@ EXPOSE ${SERVER_PORT}
 # 暴露 snail job 客户端端口 用于定时任务调度中心通信
 EXPOSE ${SNAIL_PORT}
 
-ADD ./target/ruoyi-admin.jar ./app.jar
+ADD ./target/voicetext-admin.jar ./app.jar
 
 SHELL ["/bin/bash", "-c"]
 
 ENTRYPOINT java -Djava.security.egd=file:/dev/./urandom -Dserver.port=${SERVER_PORT} \
            -Dsnail-job.port=${SNAIL_PORT} \
            # 应用名称 如果想区分集群节点监控 改成不同的名称即可
-           #-Dskywalking.agent.service_name=ruoyi-server \
-           #-javaagent:/ruoyi/skywalking/agent/skywalking-agent.jar \
+           #-Dskywalking.agent.service_name=voicetext-server \
+           #-javaagent:/voicetext/skywalking/agent/skywalking-agent.jar \
            -XX:+HeapDumpOnOutOfMemoryError -XX:+UseZGC ${JAVA_OPTS} \
            -jar app.jar
 
