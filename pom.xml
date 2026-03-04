@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.dromara</groupId>
+    <groupId>com.voicetext</groupId>
     <artifactId>voicetext-weaver-plus</artifactId>
     <version>${revision}</version>
 
@@ -137,7 +137,7 @@
 
             <!-- common 的依赖配置 -->
             <dependency>
-                <groupId>org.dromara</groupId>
+                <groupId>com.voicetext</groupId>
                 <artifactId>voicetext-common-bom</artifactId>
                 <version>${revision}</version>
                 <type>pom</type>
@@ -380,27 +380,27 @@
                 <version>${fastjson.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.dromara</groupId>
+                <groupId>com.voicetext</groupId>
                 <artifactId>voicetext-system</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>
-                <groupId>org.dromara</groupId>
+                <groupId>com.voicetext</groupId>
                 <artifactId>voicetext-job</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>
-                <groupId>org.dromara</groupId>
+                <groupId>com.voicetext</groupId>
                 <artifactId>voicetext-generator</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>
-                <groupId>org.dromara</groupId>
+                <groupId>com.voicetext</groupId>
                 <artifactId>voicetext-demo</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>
-                <groupId>org.dromara</groupId>
+                <groupId>com.voicetext</groupId>
                 <artifactId>voicetext-workflow</artifactId>
                 <version>${revision}</version>
             </dependency>

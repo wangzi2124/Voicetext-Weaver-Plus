@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>org.dromara</groupId>
+        <groupId>com.voicetext</groupId>
         <artifactId>voicetext-common</artifactId>
         <version>${revision}</version>
     </parent>
@@ -22,17 +22,17 @@
         提供音频分析、语音识别、语音合成、声音克隆、项目管理等核心功能
     </description>
 
+
     <dependencies>
-        <!-- voicetext Common Modules -->
-        <dependency>
-            <groupId>org.dromara</groupId>
-            <artifactId>voicetext-common-redis</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.dromara</groupId>
-            <artifactId>voicetext-common-oss</artifactId>
-            <scope>provided</scope>
-        </dependency>
+<!--        &lt;!&ndash; voicetext Common Modules &ndash;&gt;-->
+<!--        <dependency>-->
+<!--            <groupId>com.voicetext</groupId>-->
+<!--            <artifactId>voicetext-common-redis</artifactId>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>com.voicetext</groupId>-->
+<!--            <artifactId>voicetext-common-oss</artifactId>-->
+<!--        </dependency>-->
 
         <!-- Spring Boot -->
         <dependency>
@@ -122,31 +122,4 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>${maven-compiler-plugin.version}</version>
-                <configuration>
-                    <source>${maven.compiler.source}</source>
-                    <target>${maven.compiler.target}</target>
-                    <encoding>${project.build.sourceEncoding}</encoding>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-source-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>attach-sources</id>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
 </project>

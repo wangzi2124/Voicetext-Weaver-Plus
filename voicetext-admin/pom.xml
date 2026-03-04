@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>voicetext-weaver-plus</artifactId>
-        <groupId>org.dromara</groupId>
+        <groupId>com.voicetext</groupId>
         <version>${revision}</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
@@ -46,50 +46,50 @@
 <!--        </dependency>-->
 
         <dependency>
-            <groupId>org.dromara</groupId>
+            <groupId>com.voicetext</groupId>
             <artifactId>voicetext-common-doc</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>org.dromara</groupId>
+            <groupId>com.voicetext</groupId>
             <artifactId>voicetext-common-social</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>org.dromara</groupId>
+            <groupId>com.voicetext</groupId>
             <artifactId>voicetext-common-ratelimiter</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>org.dromara</groupId>
+            <groupId>com.voicetext</groupId>
             <artifactId>voicetext-common-mail</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>org.dromara</groupId>
+            <groupId>com.voicetext</groupId>
             <artifactId>voicetext-system</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>org.dromara</groupId>
+            <groupId>com.voicetext</groupId>
             <artifactId>voicetext-job</artifactId>
         </dependency>
 
         <!-- 代码生成-->
         <dependency>
-            <groupId>org.dromara</groupId>
+            <groupId>com.voicetext</groupId>
             <artifactId>voicetext-generator</artifactId>
         </dependency>
 
         <!--  demo模块  -->
         <dependency>
-            <groupId>org.dromara</groupId>
+            <groupId>com.voicetext</groupId>
             <artifactId>voicetext-demo</artifactId>
         </dependency>
 
         <!--  工作流模块  -->
         <dependency>
-            <groupId>org.dromara</groupId>
+            <groupId>com.voicetext</groupId>
             <artifactId>voicetext-workflow</artifactId>
         </dependency>
 

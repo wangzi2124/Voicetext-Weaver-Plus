@@ -9,19 +9,12 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>voicetext-common-translation</artifactId>
+    <artifactId>voicetext-common-python</artifactId>
 
-    <description>
-        voicetext-common-translation 通用翻译功能
-    </description>
-
-    <dependencies>
-
-        <dependency>
-            <groupId>com.voicetext</groupId>
-            <artifactId>voicetext-common-json</artifactId>
-        </dependency>
-
-    </dependencies>
+    <properties>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
 
 </project>
