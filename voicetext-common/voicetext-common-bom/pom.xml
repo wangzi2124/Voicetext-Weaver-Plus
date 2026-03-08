@@ -179,20 +179,6 @@
                 <version>${revision}</version>
             </dependency>
 
-            <!-- audio-->
-            <dependency>
-                <groupId>com.voicetext</groupId>
-                <artifactId>voicetext-common-audio</artifactId>
-                <version>${revision}</version>
-            </dependency>
-
-            <!-- 租户模块 -->
-            <dependency>
-                <groupId>com.voicetext</groupId>
-                <artifactId>voicetext-common-python</artifactId>
-                <version>${revision}</version>
-            </dependency>
-
         </dependencies>
     </dependencyManagement>
 

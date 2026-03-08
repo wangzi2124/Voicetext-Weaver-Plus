@@ -1,4 +1,0 @@
-com.voicetext.common.core.config.ApplicationConfig
-com.voicetext.common.core.config.ThreadPoolConfig
-com.voicetext.common.core.config.ValidatorConfig
-com.voicetext.common.core.utils.SpringUtils

@@ -54,6 +54,7 @@
         <!-- FFmpeg 封装 -->
         <ffmpeg.version>6.0-1.5.9</ffmpeg.version>
         <javacpp.version>1.5.9</javacpp.version>
+        <soundlibs.jlayer.version>1.0.1.4</soundlibs.jlayer.version>
         <!-- 语音识别与合成 -->
         <whisper.cpp.version>1.5.5</whisper.cpp.version>
         <coqui-tts.version>0.13.3</coqui-tts.version>
@@ -169,6 +170,12 @@
                 <version>${javacpp.version}</version>
             </dependency>
 
+            <dependency>
+                <groupId>org.bytedeco</groupId>
+                <artifactId>javacv-platform</artifactId>
+                <version>${javacpp.version}</version>
+            </dependency>
+
             <!-- Java 音频处理 -->
             <dependency>
                 <groupId>javazoom</groupId>
@@ -182,16 +189,21 @@
             </dependency>
             <dependency>
                 <groupId>com.googlecode.soundlibs</groupId>
+                <artifactId>jlayer</artifactId>
+                <version>${soundlibs.jlayer.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.googlecode.soundlibs</groupId>
                 <artifactId>basicplayer</artifactId>
                 <version>${basicplayer.version}</version>
             </dependency>
 
             <!-- 音频元数据处理 -->
-            <dependency>
-                <groupId>org.jaudiotagger</groupId>
-                <artifactId>jaudiotagger</artifactId>
-                <version>${jaudiotagger.version}</version>
-            </dependency>
+<!--            <dependency>-->
+<!--                <groupId>org.jaudiotagger</groupId>-->
+<!--                <artifactId>jaudiotagger</artifactId>-->
+<!--                <version>${jaudiotagger.version}</version>-->
+<!--            </dependency>-->
 
             <!-- 工具类 -->
             <dependency>
@@ -512,34 +524,42 @@
         </resources>
     </build>
 
-    <repositories>
-        <repository>
-            <id>TarsosDSP-repository</id>
-            <name>0110.be repository</name>
-            <url>https://mvn.0110.be/releases</url>
-        </repository>
-        <repository>
-            <id>public</id>
-            <name>huawei nexus</name>
-            <url>https://mirrors.huaweicloud.com/repository/maven/</url>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-        </repository>
-    </repositories>
+<!--    <repositories>-->
+<!--        <repository>-->
+<!--            <id>TarsosDSP-repository</id>-->
+<!--            <name>0110.be repository</name>-->
+<!--            <url>https://mvn.0110.be/releases</url>-->
+<!--        </repository>-->
+<!--        <repository>-->
+<!--            <id>public</id>-->
+<!--            <name>huawei nexus</name>-->
+<!--            <url>https://mirrors.huaweicloud.com/repository/maven/</url>-->
+<!--            <releases>-->
+<!--                <enabled>true</enabled>-->
+<!--            </releases>-->
+<!--        </repository>-->
+<!--        <repository>-->
+<!--            <id>alimaven</id>-->
+<!--            <name>aliyun mave</name>-->
+<!--            <url>http://maven.aliyun.com/nexus/content/groups/public/</url>-->
+<!--            <releases>-->
+<!--                <enabled>true</enabled>-->
+<!--            </releases>-->
+<!--        </repository>-->
+<!--    </repositories>-->
 
-    <pluginRepositories>
-        <pluginRepository>
-            <id>public</id>
-            <name>huawei nexus</name>
-            <url>https://mirrors.huaweicloud.com/repository/maven/</url>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </pluginRepository>
-    </pluginRepositories>
+<!--    <pluginRepositories>-->
+<!--        <pluginRepository>-->
+<!--            <id>public</id>-->
+<!--            <name>huawei nexus</name>-->
+<!--            <url>https://mirrors.huaweicloud.com/repository/maven/</url>-->
+<!--            <releases>-->
+<!--                <enabled>true</enabled>-->
+<!--            </releases>-->
+<!--            <snapshots>-->
+<!--                <enabled>false</enabled>-->
+<!--            </snapshots>-->
+<!--        </pluginRepository>-->
+<!--    </pluginRepositories>-->
 
 </project>

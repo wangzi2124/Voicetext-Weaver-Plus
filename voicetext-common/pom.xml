@@ -40,7 +40,7 @@
         <module>voicetext-common-tenant</module>
         <module>voicetext-common-websocket</module>
         <module>voicetext-common-sse</module>
-        <module>voicetext-common-audio</module>
         <module>voicetext-common-python</module>
+        <module>voicetext-common-audios</module>
     </modules>
 </project>
